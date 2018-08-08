@@ -1,0 +1,6 @@
+simple-elastic
+openpyxl
+requests
+pymarc
+isodate
+swissbib-kafka-event-hub
