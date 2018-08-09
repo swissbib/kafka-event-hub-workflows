@@ -1,5 +1,5 @@
-from project_digitale_nutzung.utility.mapper import MARCMapper
-from project_digitale_nutzung.utility.vufind_format_codes import swissbib_format_codes
+from kafkaflows.digi.utility import MARCMapper
+from kafkaflows.digi.utility import swissbib_format_codes
 
 from pymarc.reader import JSONReader
 from simple_elastic import ElasticIndex
