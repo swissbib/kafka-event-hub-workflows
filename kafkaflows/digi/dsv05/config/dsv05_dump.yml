@@ -6,8 +6,3 @@ SRU:
   database: defaultdb
   schema: marc/json
   max_records: 100
-  queries:
-    - query:
-        name: dc.id
-        relation: =
-        value: HAN*
