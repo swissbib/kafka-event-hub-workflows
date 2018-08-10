@@ -1,0 +1,16 @@
+AdminClient:
+  conf:
+    bootstrap.servers: sb-uka1.swissbib.unibas.ch:9092,sb-uka2.swissbib.unibas.ch:9092
+    # debug: all
+Producer:
+  bootstrap.servers: sb-uka1.swissbib.unibas.ch:9092,sb-uka2.swissbib.unibas.ch:9092
+  # debug: all
+Topic:
+  topics:
+    - sru_jsonmarc_dsv01
+Elastic:
+  index: kafka-dsv01
+  doc_type: record
+  url: http://sb-ues2.swissbib.unibas.ch:9200
+  timeout: 300
+  mapping: null
