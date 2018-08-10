@@ -1,6 +1,7 @@
 from kafkaflows.digi.utility.mapper import MARCMapper
 from kafkaflows.digi.utility.vufind_format_codes import swissbib_format_codes
 
+from kafka_event_hub.consumers import ElasticConsumer
 from simple_elastic import ElasticIndex
 from pymarc.reader import JSONReader
 
@@ -9,13 +10,26 @@ import sys
 import os
 import re
 
-if __name__ == '__main__':
-    dsv05_dig = ElasticIndex('dsv05-digitised', 'marc')
-    index = ElasticIndex('data-dsv05', 'record')
-    format_dict = swissbib_format_codes()
+dsv05_dig = ElasticIndex('dsv05-digitised', 'marc', url='http://sb-ues3.swissbib.unibas.ch:9200')
+format_dict = swissbib_format_codes()
 
-    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
-    logger = logging.getLogger(__name__)
+def update(new: dict, old: dict) -> dict:
+    pass
+
+def filter(message: str) -> bool:
+    pass
+
+def transformation(message: str) -> dict:
+    pass
+
+
+if __name__ == '__main__':
+
+    consumer = ElasticConsumer('config/elastic_consumer.yml', logging.getLogger(__name__))
+    consumer.set_filter_policy(filter)
+    consumer.set_transformation_policy(transformation)
+    consumer.set_update_policy(update)
+
     for root, dirs, files in os.walk('data/dsv05/'):
         for file in files:
             with open(root + file, 'r') as fp:
