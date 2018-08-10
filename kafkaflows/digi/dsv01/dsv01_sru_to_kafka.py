@@ -1,15 +1,14 @@
 from kafka_event_hub.producers import SRUProducer
-from simple_elastic import ElasticIndex
-
 
 if __name__ == '__main__':
-    dsv01_arc = ElasticIndex('dsv01-full-arc-export', 'record')
-
-    for element in dsv01_arc.scroll():
-        for item in element:
-            if item['system_number'] != '000013825':
-                producer = SRUProducer('config/dsv01_dump.yml')
-                producer.query_anywhere_equal('IDSBB' + item['system_number'])
+    with open('data/dsv01_system_numbers_vor_1900_arc_export_20180802.csv', 'r') as file:
+        producer = SRUProducer('config/dsv01_dump.yml')
+        for line in file:
+            year, sys_number = line.split(',')
+            while len(sys_number) != 10:
+                sys_number = '0' + sys_number
+            if sys_number != '000013825':
+                producer.set_query_anywhere_equal_with('IDSBB' + sys_number)
                 producer.process()
 
 
