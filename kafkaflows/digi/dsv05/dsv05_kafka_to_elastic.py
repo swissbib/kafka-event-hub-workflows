@@ -154,8 +154,7 @@ def update(old: dict, new: dict) -> dict:
     return old
 
 
-if __name__ == '__main__':
-
+def run_dsv05_consumer():
     logger = logging.getLogger(__name__)
 
     logging.basicConfig(filename='logs/dsv05-consumer.log', filemode='w', level=logging.INFO)
