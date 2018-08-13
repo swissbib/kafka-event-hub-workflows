@@ -138,6 +138,9 @@ class MARCMapper(object):
                         else:
                             self.add_error_tag('_no_valid_046_date')
                             return False
+                    else:
+                        self.add_error_tag('_no_valid_046_date')
+                        return False
                 elif code in ['q', 'm']:
                     if self._record['046']['c'] is not None:
                         date = self._record['046']['c']
@@ -150,21 +153,26 @@ class MARCMapper(object):
                             self.result['dates']['exact']['day'] = int(day)
                         else:
                             self.add_error_tag('_no_valid_046_date')
-                    if self._record['046']['e'] is not None:
-                        self.result['dates']['exact']['to'] = self._record['046']['e']
-                    if self._record['046']['b'] is not None:
-                        self.result['dates']['exact']['from_b_Chr'] = self._record['046']['b']
+                        if self._record['046']['e'] is not None:
+                            self.result['dates']['exact']['to'] = self._record['046']['e']
+                        if self._record['046']['b'] is not None:
+                            self.result['dates']['exact']['from_b_Chr'] = self._record['046']['b']
 
-                    if '_no_valid_046_date' in self.result['error_tags']:
-                        return False
+                        if '_no_valid_046_date' in self.result['error_tags']:
+                            return False
+                        else:
+                            return True
                     else:
-                        return True
+                        return False
+                else:
+                    self.add_error_tag('_no_valid_046_date')
+                    return False
             else:
+                self.add_error_tag('_no_valid_046_date')
                 return False
         else:
+            self.add_error_tag('_no_valid_046_date')
             return False
-
-        return False
 
     def parse_date_from_264(self) -> bool:
         if self._record['264'] is not None:
