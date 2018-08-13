@@ -33,9 +33,11 @@ def parse_date(record: MARCMapper):
         record.add_error_tag('_no_valid_date')
 
 
-def pre_filer(message: str) -> bool:
+def pre_filter(message: str) -> bool:
     if re.search('{"F": "(A100|A125|A130)"},', message):
         return False
+    else:
+        return True
 
 
 def transformation(message: str) -> dict:
@@ -44,8 +46,9 @@ def transformation(message: str) -> dict:
         marc = MARCMapper(record)
 
         for field in marc.get_fields('949'):
-            marc.add_value('library', field['F'])
-            marc.add_identifier('call_number', field['j'])
+            if field['F'] in ['A100', 'A125', 'A130']:
+                marc.add_value('library', field['F'])
+                marc.add_identifier('call_number', field['j'])
 
         marc.add_value('database', 'dsv05')
 
@@ -144,9 +147,11 @@ def transformation(message: str) -> dict:
         return marc.result
 
 
-def after_filer(transformed_message: dict) -> bool:
+def after_filter(transformed_message: dict) -> bool:
     if int(transformed_message['final']['year']) > 1920:
         return True
+    else:
+        return False
 
 
 def update(old: dict, new: dict) -> dict:
@@ -157,9 +162,9 @@ def update(old: dict, new: dict) -> dict:
 def run_dsv05_consumer():
     logger = logging.getLogger(__name__)
     consumer = ElasticConsumer('configs/dsv05/elastic_consumer.yml', logger)
-    consumer.set_pre_filter_policy(pre_filer)
+    consumer.set_pre_filter_policy(pre_filter)
     consumer.set_transformation_policy(transformation)
-    consumer.set_after_filter_policy(after_filer)
+    consumer.set_after_filter_policy(after_filter)
     consumer.set_update_policy(update)
     while True:
         consumer.consume()
