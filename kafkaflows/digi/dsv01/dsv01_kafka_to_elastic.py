@@ -138,7 +138,7 @@ def run_dsv01_consumer():
     logging.basicConfig(filename='logs/dsv01-consumer.log', filemode='w', level=logging.INFO)
     logger = logging.getLogger(__name__)
 
-    consumer = ElasticConsumer('kafkaflow/digi/dsv01/config/elastic_consumer.yml', logger)
+    consumer = ElasticConsumer('configs/dsv01/elastic_consumer.yml', logger)
     consumer.set_pre_filter_policy(pre_filer)
     consumer.set_transformation_policy(transformation)
     consumer.set_after_filter_policy(after_filer)

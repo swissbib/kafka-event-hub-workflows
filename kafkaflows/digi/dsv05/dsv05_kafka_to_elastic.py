@@ -159,7 +159,7 @@ def run_dsv05_consumer():
 
     logging.basicConfig(filename='logs/dsv05-consumer.log', filemode='w', level=logging.INFO)
 
-    consumer = ElasticConsumer('kafkaflows/digi/dsv05/config/elastic_consumer.yml', logger)
+    consumer = ElasticConsumer('configs/dsv05/elastic_consumer.yml', logger)
     consumer.set_pre_filter_policy(pre_filer)
     consumer.set_transformation_policy(transformation)
     consumer.set_after_filter_policy(after_filer)

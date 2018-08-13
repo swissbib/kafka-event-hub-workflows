@@ -6,7 +6,7 @@ def run_dsv01_producer():
     logging.basicConfig(filename='logs/dsv01-producer.log', filemode='w', level=logging.INFO)
 
     with open('data/dsv01_system_numbers_vor_1900_arc_export_20180802.csv', 'r', encoding='utf-16') as file:
-        producer = SRUProducer('config/dsv01_dump.yml')
+        producer = SRUProducer('configs/dsv01/dsv01_dump.yml')
         for line in file:
             year, sys_number = line.split(',')
             while len(sys_number) != 10:
