@@ -142,10 +142,8 @@ def run_dsv01_consumer():
     consumer.set_transformation_policy(transformation)
     consumer.set_after_filter_policy(after_filer)
     consumer.set_update_policy(update)
-    logger.debug('Consuming messages!')
     while True:
         consumer.consume()
-        logger.debug('Message consumed!')
 
 
 
