@@ -166,8 +166,11 @@ class MARCMapper(object):
         if self._record['264'] is not None:
             if self._record['264']['c'] is not None:
                 date = re.search('\d{4}', self._record['264']['c'])
-                self.result['dates']['parsed_264_year'] = int(date.string)
-                return True
+                if date is not None:
+                    self.result['dates']['parsed_264_year'] = int(date.string)
+                    return True
+                else:
+                    return False
             else:
                 return False
         else:
