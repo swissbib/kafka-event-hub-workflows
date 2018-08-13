@@ -165,9 +165,9 @@ class MARCMapper(object):
     def parse_date_from_264(self) -> bool:
         if self._record['264'] is not None:
             if self._record['264']['c'] is not None:
-                date = re.search('\d{4}', self._record['264']['c'])
+                date = re.search('(?P<year>\d{4})', self._record['264']['c'])
                 if date is not None:
-                    self.result['dates']['parsed_264_year'] = int(date.string)
+                    self.result['dates']['parsed_264_year'] = int(date.groupdict()['year'])
                     return True
                 else:
                     return False
