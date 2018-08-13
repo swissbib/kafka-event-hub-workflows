@@ -2,7 +2,7 @@ AdminClient:
   conf:
     bootstrap.servers: sb-uka1.swissbib.unibas.ch:9092,sb-uka2.swissbib.unibas.ch:9092
     # debug: all
-Producer:
+Consumer:
   bootstrap.servers: sb-uka1.swissbib.unibas.ch:9092,sb-uka2.swissbib.unibas.ch:9092
   # debug: all
 Topic:
