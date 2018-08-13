@@ -5,6 +5,8 @@ AdminClient:
 Consumer:
   bootstrap.servers: sb-uka1.swissbib.unibas.ch:9092,sb-uka2.swissbib.unibas.ch:9092
   group.id: dsv05
+  default.topic.config:
+    auto.offset.reset: smallest
   # debug: all
 Topic:
   topics:
