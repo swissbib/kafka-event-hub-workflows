@@ -82,7 +82,7 @@ class MARCMapper(object):
             self.logger.info('No date defined in field 008 (code n)')
             return False
 
-        if _008[6] not in ['s', 'm', 'q', 'i', 'd', 'r', 'u', 'c']:
+        if _008[6] not in ['s', 'm', 'q', 'i', 'd', 'r', 'u', 'c', 't', 'p']:
             self.logger.error('Unexpected value in field 008 F6 (date type): %s.', _008[6])
             return False
 
@@ -95,7 +95,7 @@ class MARCMapper(object):
             self.logger.info('Invalid date in 008 F7-11: %s', year_1)
             return False
 
-        if _008[6] == 's':
+        if _008[6] in ['s', 't', 'p']:
             self.result['dates']['date']['year'] = year_1
             return True
 
