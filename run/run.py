@@ -10,11 +10,16 @@ from kafkaflows.digi.dsv05 import run_dsv05_producer
 
 parser = argparse.ArgumentParser(description='CLI for Kafka Workflows')
 parser.add_argument('script', action='store')
+parser.add_argument('-d', action='store_true', dest='debug')
 
 args = parser.parse_args()
 
-logging.basicConfig(filename='logs/{}.log'.format(args.script), filemode='w', level=logging.DEBUG,
-                    format='%(levelname)s|%(name)s|%(asctime)s|%(message)s')
+if hasattr(args, 'debug'):
+    logging.basicConfig(filename='logs/{}.log'.format(args.script), filemode='w', level=logging.DEBUG,
+                        format='%(levelname)s|%(name)s|%(asctime)s|%(message)s')
+else:
+    logging.basicConfig(filename='logs/{}.log'.format(args.script), filemode='w', level=logging.ERROR,
+                        format='%(levelname)s|%(name)s|%(asctime)s|%(message)s')
 
 try:
     if args.script == 'dsv05-consumer':
