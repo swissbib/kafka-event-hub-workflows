@@ -35,7 +35,7 @@ def parse_date(record: MARCMapper):
 
 def pre_filer(message: str) -> bool:
     if re.search('{"F": "(A100|A125|A130)"},', message):
-        return True
+        return False
 
 
 def transformation(message: str) -> dict:
