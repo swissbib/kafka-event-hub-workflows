@@ -14,7 +14,7 @@ parser.add_argument('script', action='store')
 args = parser.parse_args()
 
 logging.basicConfig(filename='logs/{}.log'.format(args.script), filemode='w', level=logging.DEBUG,
-                    format='%(levelname)s|%(name)s|%(asctime)f|%(message)s')
+                    format='%(levelname)s|%(name)s|%(asctime)s|%(message)s')
 
 try:
     if args.script == 'dsv05-consumer':
