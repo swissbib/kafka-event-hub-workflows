@@ -158,7 +158,7 @@ if __name__ == '__main__':
 
     logger = logging.getLogger(__name__)
 
-    logging.basicConfig(filename='dsv05-consumer.log', filemode='w', level=logging.INFO)
+    logging.basicConfig(filename='logs/dsv05-consumer.log', filemode='w', level=logging.INFO)
 
     consumer = ElasticConsumer('config/elastic_consumer.yml', logger)
     consumer.set_pre_filter_policy(pre_filer)
