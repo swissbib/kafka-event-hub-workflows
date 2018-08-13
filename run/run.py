@@ -13,7 +13,7 @@ parser.add_argument('script', action='store')
 
 args = parser.parse_args()
 
-logging.basicConfig(filename='logs/{}.log'.format(args.script), filemode='w', level=logging.INFO,
+logging.basicConfig(filename='logs/{}.log'.format(args.script), filemode='w', level=logging.DEBUG,
                     format='%(levelname)s|%(name)s|%(created)f|%(message)s')
 
 try:
@@ -24,6 +24,7 @@ try:
     elif args.script == 'dsv01-producer':
         run_dsv01_producer()
     elif args.script == 'dsv01-consumer':
+        logging.debug('Start dsv01 consumer!')
         run_dsv01_consumer()
 except Exception as e:
     logging.exception(e)

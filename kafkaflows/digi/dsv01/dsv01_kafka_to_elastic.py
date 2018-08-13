@@ -135,16 +135,17 @@ def update(old: dict, new: dict) -> dict:
 
 
 def run_dsv01_consumer():
-    logging.basicConfig(filename='logs/dsv01-consumer.log', filemode='w', level=logging.INFO)
     logger = logging.getLogger(__name__)
-
+    logger.debug('Setting up ElasticConsumer.')
     consumer = ElasticConsumer('configs/dsv01/elastic_consumer.yml', logger)
     consumer.set_pre_filter_policy(pre_filer)
     consumer.set_transformation_policy(transformation)
     consumer.set_after_filter_policy(after_filer)
     consumer.set_update_policy(update)
+    logger.debug('Consuming messages!')
     while True:
         consumer.consume()
+        logger.debug('Message consumed!')
 
 
 
