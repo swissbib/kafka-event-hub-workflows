@@ -116,8 +116,8 @@ class MARCMapper(object):
 
     def parse_date_from_046(self) -> bool:
         if self._record['046'] is not None:
-            self.result['dates']['exact'] = dict()
             if self._record['046']['a'] is not None:
+                self.result['dates']['exact'] = dict()
                 code = self._record['046']['a']
                 self.result['dates']['exact']['type'] = code
                 if code in ['n', 'und']:
@@ -159,8 +159,12 @@ class MARCMapper(object):
                         return False
                     else:
                         return True
+            else:
+                return False
         else:
             return False
+
+        return False
 
     def parse_date_from_264(self) -> bool:
         if self._record['264'] is not None:
