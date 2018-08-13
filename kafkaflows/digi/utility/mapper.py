@@ -74,17 +74,17 @@ class MARCMapper(object):
         else:
             self.logger.warning('Could not parse cat date: %s for record %s.', _008[:6], self.result['identifier'])
 
-    def parse_008_date(self):
+    def parse_date_from_008(self) -> bool:
         _008 = self._record['008'].value()
         self.result['dates']['date'] = dict()
         self.result['dates']['date']['type'] = _008[6]
         if _008[6] == 'n':
             self.logger.info('No date defined in field 008 (code n)')
-            return 'no_date'
+            return False
 
         if _008[6] not in ['s', 'm', 'q', 'i', 'd', 'r']:
             self.logger.error('Unexpected value in field 008 F6 (date type): %s.', _008[6])
-            return 'no_date'
+            return False
 
         year_1 = _008[7:11]
         year_2 = _008[11:15]
@@ -93,35 +93,82 @@ class MARCMapper(object):
             year_1 = int(year_1)
         else:
             self.logger.info('Invalid date in 008 F7-11: %s', year_1)
-            return 'invalid_date'
+            return False
 
         if _008[6] == 's':
-            if year_1 <= 1920:
-                self.result['dates']['date']['year'] = year_1
-                return 'ok'
-            else:
-                return 'after_1920'
+            self.result['dates']['date']['year'] = year_1
+            return True
 
         if re.match('\d{4}', year_2):
             year_2 = int(year_2)
 
         if _008[6] == 'r':
-            if year_1 <= 1920:
-                self.result['dates']['date']['year'] = year_1
-                if isinstance(year_2, int):
-                    self.result['dates']['date']['original'] = year_2
-                return 'ok'
-            else:
-                return 'after_1920'
+            self.result['dates']['date']['year'] = year_1
+            if isinstance(year_2, int):
+                self.result['dates']['date']['original'] = year_2
+            return True
 
         if _008[6] in ['m', 'q', 'i', 'd']:
-            if year_1 <= 1920:
-                self.result['dates']['date']['year'] = year_1
-                if isinstance(year_2, int):
-                    self.result['dates']['date']['to'] = year_2
-                return 'ok'
-            else:
-                return 'after_1920'
+            self.result['dates']['date']['year'] = year_1
+            if isinstance(year_2, int):
+                self.result['dates']['date']['to'] = year_2
+            return True
+
+    def parse_date_from_046(self) -> bool:
+        if self._record['046'] is not None:
+            self.result['dates']['exact'] = dict()
+            if self._record['046']['a'] is not None:
+                code = self._record['046']['a']
+                self.result['dates']['exact']['type'] = code
+                if code in ['n', 'und']:
+                    self.add_error_tag('_no_valid_046_date')
+                    return False
+                elif code in ['s']:
+                    if self._record['046']['c'] is not None:
+                        date = self._record['046']['c']
+                        if re.match('\d{4}$', date):
+                            self.result['dates']['exact']['year'] = int(date)
+                            return True
+                        elif re.match('\d{4}\.\d{2}\.\d{2}$', date):
+                            year, month, day = date.split('.')
+                            self.result['dates']['exact']['year'] = int(year)
+                            self.result['dates']['exact']['month'] = int(month)
+                            self.result['dates']['exact']['day'] = int(day)
+                            return True
+                        else:
+                            self.add_error_tag('_no_valid_046_date')
+                            return False
+                elif code in ['q', 'm']:
+                    if self._record['046']['c'] is not None:
+                        date = self._record['046']['c']
+                        if re.match('\d{4}$', date):
+                            self.result['dates']['exact']['year'] = int(date)
+                        elif re.match('\d{4}\.\d{2}\.\d{2}$', date):
+                            year, month, day = date.split('.')
+                            self.result['dates']['exact']['year'] = int(year)
+                            self.result['dates']['exact']['month'] = int(month)
+                            self.result['dates']['exact']['day'] = int(day)
+                        else:
+                            self.add_error_tag('_no_valid_046_date')
+                    if self._record['046']['e'] is not None:
+                        self.result['dates']['exact']['to'] = self._record['046']['e']
+                    if self._record['046']['b'] is not None:
+                        self.result['dates']['exact']['from_b_Chr'] = self._record['046']['b']
+
+                    if '_no_valid_046_date' in self.result['error_tags']:
+                        return False
+                    else:
+                        return True
+        else:
+            return False
+
+    def parse_date_from_264(self) -> bool:
+        if self._record['264']['c'] is not None:
+            date = re.search('\d{4}', self._record['264']['c'])
+            self.result['dates']['parsed_264_year'] = int(date.string)
+            return True
+        else:
+            return False
 
     def parse_rest_008(self):
         _008 = self._record['008'].value()
