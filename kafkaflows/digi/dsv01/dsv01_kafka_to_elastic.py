@@ -119,7 +119,7 @@ def transformation(message: str) -> dict:
             marc.add_value_sub_sub('final', 'extent', 'unit_name', 'Dossier')
 
         if 'date' in marc.result['production']:
-            marc.result['final']['display_date'] = marc['production']['date']
+            marc.result['final']['display_date'] = marc.result['production']['date']
 
         return marc.result
 
