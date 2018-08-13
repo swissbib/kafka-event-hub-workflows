@@ -1,0 +1,1 @@
+from kafkaflows.digi.swissbib_elk.collect_swissbib_elk_data import run_swissbib_elk
