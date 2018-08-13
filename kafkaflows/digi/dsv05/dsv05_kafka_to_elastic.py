@@ -9,7 +9,7 @@ import logging
 import io
 import re
 
-dsv05_dig = ElasticIndex('dsv05-digitised', 'marc', url='http://sb-ues3.swissbib.unibas.ch:9200')
+dsv05_dig = ElasticIndex('dsv05-digitised', 'marc', url='http://sb-ues2.swissbib.unibas.ch:9200')
 format_dict = swissbib_format_codes()
 
 
@@ -114,8 +114,8 @@ def transformation(message: str) -> dict:
                 marc.add_value_sub('final', 'type', 'manuscript')
             else:
                 marc.add_error_tag('_unknown_print_material')
-                logger.warning('Unknown print material: %s in %s.', marc.result['print_material'],
-                               marc.result['identifier'])
+                logging.warning('Unknown print material: %s in %s.', marc.result['print_material'],
+                                 marc.result['identifier'])
         else:
             marc.add_value_sub('final', 'type', 'manuscript')
 

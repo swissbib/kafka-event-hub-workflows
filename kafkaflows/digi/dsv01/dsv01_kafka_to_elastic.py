@@ -9,7 +9,7 @@ import re
 import io
 import logging
 
-dsv01_dig = ElasticIndex('dsv01-digitised', 'marc', url='http://sb-ues3.swissbib.unibas.ch:9200')
+dsv01_dig = ElasticIndex('dsv01-digitised', 'marc', url='http://sb-ues2.swissbib.unibas.ch:9200')
 format_dict = swissbib_format_codes()
 
 
