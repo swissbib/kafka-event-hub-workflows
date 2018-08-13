@@ -25,7 +25,7 @@ def parse_date(record: MARCMapper):
         record.add_value_sub('final', 'year', int(year))
         record.append_value_sub('final', 'century', int(year / 100) + 1)
     elif record.parse_date_from_264():
-        year = record.result['dates']['parsed_264']
+        year = record.result['dates']['parsed_264_year']
         record.add_value_sub('final', 'year', int(year))
         record.append_value_sub('final', 'century', int(year / 100) + 1)
     else:
