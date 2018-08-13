@@ -15,8 +15,12 @@ parser.add_argument('-d', action='store_true', dest='debug')
 args = parser.parse_args()
 
 if hasattr(args, 'debug'):
-    logging.basicConfig(filename='logs/{}.log'.format(args.script), filemode='w', level=logging.DEBUG,
-                        format='%(levelname)s|%(name)s|%(asctime)s|%(message)s')
+    if args.debug:
+        logging.basicConfig(filename='logs/{}.log'.format(args.script), filemode='w', level=logging.DEBUG,
+                            format='%(levelname)s|%(name)s|%(asctime)s|%(message)s')
+    else:
+        logging.basicConfig(filename='logs/{}.log'.format(args.script), filemode='w', level=logging.ERROR,
+                            format='%(levelname)s|%(name)s|%(asctime)s|%(message)s')
 else:
     logging.basicConfig(filename='logs/{}.log'.format(args.script), filemode='w', level=logging.ERROR,
                         format='%(levelname)s|%(name)s|%(asctime)s|%(message)s')
