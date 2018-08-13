@@ -156,9 +156,6 @@ def update(old: dict, new: dict) -> dict:
 
 def run_dsv05_consumer():
     logger = logging.getLogger(__name__)
-
-    logging.basicConfig(filename='logs/dsv05-consumer.log', filemode='w', level=logging.INFO)
-
     consumer = ElasticConsumer('configs/dsv05/elastic_consumer.yml', logger)
     consumer.set_pre_filter_policy(pre_filer)
     consumer.set_transformation_policy(transformation)
