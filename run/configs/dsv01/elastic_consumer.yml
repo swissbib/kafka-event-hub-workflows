@@ -4,6 +4,7 @@ AdminClient:
     # debug: all
 Consumer:
   bootstrap.servers: sb-uka1.swissbib.unibas.ch:9092,sb-uka2.swissbib.unibas.ch:9092
+  group.id: dsv01
   # debug: all
 Topic:
   topics:
