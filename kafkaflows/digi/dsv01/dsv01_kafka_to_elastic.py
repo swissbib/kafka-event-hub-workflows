@@ -143,10 +143,10 @@ def update(old: dict, new: dict) -> dict:
     return old
 
 
-def run_dsv01_consumer():
+def run_dsv01_consumer(config):
     logger = logging.getLogger(__name__)
     logger.debug('Setting up ElasticConsumer.')
-    consumer = ElasticConsumer('configs/dsv01/elastic_consumer.yml', logger)
+    consumer = ElasticConsumer(config['consumer.path'], logger)
     consumer.set_pre_filter_policy(pre_filter)
     consumer.set_transformation_policy(transformation)
     consumer.set_after_filter_policy(after_filter)

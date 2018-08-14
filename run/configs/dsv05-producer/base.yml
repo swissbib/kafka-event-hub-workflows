@@ -1,0 +1,4 @@
+logging:
+  # 10: debug, 20: info, 30: warning, 40:error
+  level: 30
+producer.path: configs/dsv05-producer/dsv05_dump.yml
