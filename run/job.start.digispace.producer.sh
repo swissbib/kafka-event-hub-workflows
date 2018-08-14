@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-ssh -f -o ExitOnForwardFailure=yes -L 9200:localhost:9200 harvester@ub-afrikaportal.ub.unibas.ch:9200
+ssh -f -o ExitOnForwardFailure=yes -L 9200:localhost:9200 harvester@ub-afrikaportal.ub.unibas.ch
 
 sleep 10
 
