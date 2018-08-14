@@ -20,3 +20,4 @@ Scroll:
   size: 100
   # match all!
   query: null
+identifier_key: sys_id
