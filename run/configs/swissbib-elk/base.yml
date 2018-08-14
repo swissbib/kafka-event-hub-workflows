@@ -3,4 +3,4 @@ logging:
   level: 30
 elastic:
   target.host: http://sb-ues2.swissbib.unibas.ch:9200
-  swissbib.host: http://sb-uesl1.swissbib.unibas.ch:9300
+  swissbib.host: http://sb-uesl1.swissbib.unibas.ch:8080
