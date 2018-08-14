@@ -1,4 +1,4 @@
 logging:
   # 10: debug, 20: info, 30: warning, 40:error
-  level: 30
+  level: 10
 producer.path: configs/digispace/digispace_producer.yml
