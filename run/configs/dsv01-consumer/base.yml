@@ -1,0 +1,4 @@
+logging:
+  # 10: debug, 20: info, 30: warning, 40:error
+  level: 30
+consumer.path: configs/dsv01-consumer/elastic_consumer.yml
