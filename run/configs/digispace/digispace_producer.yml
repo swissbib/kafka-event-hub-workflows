@@ -12,7 +12,7 @@ Topic:
 ElasticIndex:
   index: digidata
   doc_type: objects
-  url: https://ub-afrikaportal.ub.unibas.ch:9200
+  url: https://localhost:9200
   timeout: 300
   mapping: null
 Scroll:
