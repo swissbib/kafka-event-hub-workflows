@@ -1,0 +1,22 @@
+AdminClient:
+  conf:
+    bootstrap.servers: sb-uka1.swissbib.unibas.ch:9092,sb-uka2.swissbib.unibas.ch:9092
+    # debug: all
+Producer:
+  bootstrap.servers: sb-uka1.swissbib.unibas.ch:9092,sb-uka2.swissbib.unibas.ch:9092
+  # debug: all
+Topic:
+  topic: digispace_data
+  num_partitions: 1
+  replication_factor: 1
+ElasticIndex:
+  index: digidata
+  doc_type: objects
+  url: http://ub-afrikaportal.ub.unibas.ch:9200
+  timeout: 300
+  mapping: null
+Scroll:
+  scroll: 5m
+  size: 100
+  # match all!
+  query: null
