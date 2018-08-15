@@ -74,7 +74,8 @@ class TransformSruExport(DataTransformation):
         result = self.digidata_index.search(query=query)
         if len(result) > 0:
             self.marc.add_value('is_digitized', True)
-            self.marc.add_value('number_of_images', result[0]['number_of_images'])
+            if 'number_of_images' in result[0]:
+                self.marc.add_value('number_of_images', result[0]['number_of_images'])
         else:
             self.marc.add_value('is_digitized', False)
 
