@@ -4,7 +4,7 @@ AdminClient:
     # debug: all
 Consumer:
   bootstrap.servers: sb-uka1.swissbib.unibas.ch:9092,sb-uka2.swissbib.unibas.ch:9092
-  group.id: digispace-v3
+  group.id: digispace-v4
   default.topic.config:
     auto.offset.reset: smallest
   # debug: all
