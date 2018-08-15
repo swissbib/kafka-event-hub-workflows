@@ -31,8 +31,6 @@ try:
         run_dsv01_producer(config)
     elif args.script == 'dsv01-consumer':
         run_dsv01_consumer(config)
-    elif args.script == 'swissbib-elk':
-        run_swissbib_elk(config)
     elif args.script == 'digispace-producer':
         run_digispace_to_kafka(config)
     elif args.script == 'digispace-consumer':
