@@ -13,6 +13,8 @@ db_translation = {
 def run_digispace_kafka_to_result(config):
     logging.debug('Begin adding digispace data to database.')
     index = ElasticIndex(**config['Elastic'])
+    dsv05 = ElasticIndex(**config['Elastic5'])
+    dsv01 = ElasticIndex(**config['Elastic1'])
 
     consumer = SimpleConsumer(config['consumer.path'])
     while True:
@@ -36,7 +38,10 @@ def run_digispace_kafka_to_result(config):
                 record['digidata']['is_digitised'] = True
                 if 'images' in digidata:
                     record['digidata']['images'] = digidata['images']
-                index.index_into(record, record['identifier'])
+                if db == '1':
+                    dsv01.index_into(record, record['identifier'])
+                else:
+                    dsv05.index_into(record, record['identifier'])
             elif len(results) == 0:
                 logging.error('Found no records for %s form %s.', sys_number, db_translation[db])
             else:

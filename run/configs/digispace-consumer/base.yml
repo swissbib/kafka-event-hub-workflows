@@ -8,3 +8,15 @@ Elastic:
   url: http://sb-ues2.swissbib.unibas.ch:9200
   timeout: 300
   mapping: null
+Elastic1:
+  index: kafka-dsv01
+  doc_type: record
+  url: http://sb-ues2.swissbib.unibas.ch:9200
+  timeout: 300
+  mapping: null
+Elastic5:
+  index: kafka-dsv05
+  doc_type: record
+  url: http://sb-ues2.swissbib.unibas.ch:9200
+  timeout: 300
+  mapping: null
