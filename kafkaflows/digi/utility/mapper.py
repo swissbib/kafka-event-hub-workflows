@@ -9,7 +9,8 @@ import re
 class MARCMapper(object):
 
     def __init__(self, record, logger=logging.getLogger(__name__)):
-        self._record = JSONReader(record)[0]
+        for record in JSONReader(record):
+            self._record = record
         self.logger = logger
         self.result = dict()
 
