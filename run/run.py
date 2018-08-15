@@ -9,7 +9,7 @@ from kafkaflows.digi.dsv01 import run_dsv01_consumer
 from kafkaflows.digi.dsv05 import run_dsv05_consumer
 from kafkaflows.digi.dsv05 import run_dsv05_producer
 from kafkaflows.digi.swissbib_elk import run_swissbib_elk
-from kafkaflows.digi.digispace.digispace_to_kafka import run_digispace_to_kafka
+from kafkaflows.digi.digispace import run_digispace_kafka_to_result, run_digispace_to_kafka
 
 parser = argparse.ArgumentParser(description='CLI for Kafka Workflows')
 parser.add_argument('script', action='store')
@@ -33,8 +33,10 @@ try:
         run_dsv01_consumer(config)
     elif args.script == 'swissbib-elk':
         run_swissbib_elk(config)
-    elif args.script == 'digispace':
+    elif args.script == 'digispace-producer':
         run_digispace_to_kafka(config)
+    elif args.script == 'digispace-consumer':
+        run_digispace_kafka_to_result(config)
 except Exception as e:
     logging.exception(e)
     sys.exit(1)

@@ -1,0 +1,13 @@
+AdminClient:
+  conf:
+    bootstrap.servers: sb-uka1.swissbib.unibas.ch:9092,sb-uka2.swissbib.unibas.ch:9092
+    # debug: all
+Consumer:
+  bootstrap.servers: sb-uka1.swissbib.unibas.ch:9092,sb-uka2.swissbib.unibas.ch:9092
+  group.id: digispace
+  default.topic.config:
+    auto.offset.reset: latest
+  # debug: all
+Topic:
+  topics:
+    - digispace_data
