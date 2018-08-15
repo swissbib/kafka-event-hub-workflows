@@ -4,6 +4,11 @@ import re
 import logging
 import sys
 
+"""
+IMPORTANT: Before rebuilding the OPAC access index, delete the old one, as identifiers 
+start at zero...
+"""
+
 if __name__ == '__main__':
 
     logging.basicConfig(stream=sys.stdout, level=logging.WARNING)

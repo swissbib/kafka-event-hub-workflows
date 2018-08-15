@@ -1,4 +1,5 @@
 from kafka_event_hub.consumers import ElasticConsumer
+from kafka_event_hub.consumers.utility import DataTransformation
 
 import logging
 import json
@@ -9,33 +10,36 @@ db_translation = {
 }
 
 
-def digispace_data_transformation(value: str) -> dict:
-    record = json.loads(value, encoding='utf-8')
+class Transformation(DataTransformation):
 
-    result = dict()
-    sys_id = record['sys_id']
-    if isinstance(sys_id, list):
-        sys_id = sys_id[0]
+    def __init__(self):
+        super().__init__()
 
-    result['identifier'] = sys_id
-    try:
-        db, sys_number = sys_id.split('_')
-    except ValueError:
-        pass
-    else:
-        result['database'] = db_translation[db]
-        result['system_number'] = sys_number
-        if 'images' in record:
-            result['number_of_images'] = record['images']
+    def transform(self, value: str):
+        record = json.loads(value, encoding='utf-8')
 
-    return result
+        result = dict()
+        sys_id = record['sys_id']
+        if isinstance(sys_id, list):
+            sys_id = sys_id[0]
+
+        result['identifier'] = sys_id
+        try:
+            db, sys_number = sys_id.split('_')
+        except ValueError:
+            pass
+        else:
+            result['database'] = db_translation[db]
+            result['system_number'] = sys_number
+            if 'images' in record:
+                result['number_of_images'] = record['images']
+
+        return result
 
 
 def run_digispace_kafka_to_result(config):
     logging.debug('Create digidata elastic index.')
-    consumer = ElasticConsumer(config['consumer.path'])
-    consumer.set_transformation_policy(digispace_data_transformation)
-
+    consumer = ElasticConsumer(config['consumer.path'], transformation_class=Transformation)
     while True:
         consumer.consume(num_messages=100)
 

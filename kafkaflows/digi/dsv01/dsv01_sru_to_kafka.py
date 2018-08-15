@@ -12,6 +12,3 @@ def run_dsv01_producer(config):
             if sys_number != '000013825':
                 producer.set_query_anywhere_equal_with('IDSBB' + sys_number)
                 producer.process()
-
-
-
