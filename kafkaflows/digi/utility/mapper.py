@@ -1,13 +1,15 @@
 from isodate.isoerror import ISO8601Error
+from pymarc import JSONReader
 import isodate
 
 import logging
 import re
 
+
 class MARCMapper(object):
 
     def __init__(self, record, logger=logging.getLogger(__name__)):
-        self._record = record
+        self._record = JSONReader(record)
         self.logger = logger
         self.result = dict()
 

@@ -24,7 +24,6 @@ class TransformSruExport(DataTransformation):
         self.reservations = ElasticIndex(**config['reservations'])
 
     def transform(self, value: str) -> dict:
-        value = json.loads(value)
         self.marc = MARCMapper(value)
         self.marc.add_value('database', self._database)
         self.marc.identifier()
