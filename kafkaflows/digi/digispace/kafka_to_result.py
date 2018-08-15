@@ -13,9 +13,13 @@ def digispace_data_transformation(value: str) -> dict:
     record = json.loads(value, encoding='utf-8')
 
     result = dict()
-    result['identifier'] = record['sys_id']
+    sys_id = record['sys_id']
+    if isinstance(sys_id, list):
+        sys_id = sys_id[0]
+
+    result['identifier'] = sys_id
     try:
-        db, sys_number = record['sys_id'].split('_')
+        db, sys_number = sys_id.split('_')
     except ValueError:
         pass
     else:
