@@ -1,0 +1,10 @@
+logging:
+  # 10: debug, 20: info, 30: warning, 40:error
+  level: 30
+consumer.path: configs/digispace-consumer/elastic.yml
+Elastic:
+  index: kafka-*
+  doc_type: record
+  url: http://sb-ues2.swissbib.unibas.ch:9200
+  timeout: 300
+  mapping: null
