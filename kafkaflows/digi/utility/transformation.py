@@ -5,7 +5,6 @@ from kafka_event_hub.consumers.utility import DataTransformation
 from simple_elastic import ElasticIndex
 
 import logging
-import json
 import re
 
 format_dict = swissbib_format_codes()
