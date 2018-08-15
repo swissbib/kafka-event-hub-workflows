@@ -47,7 +47,7 @@ def transformation(message: str) -> dict:
         marc.add_value('database', 'dsv01')
 
         for field in marc.get_fields('949'):
-            if field['F'] in ['A100', 'A125', 'A130']:
+            if field['F'] in ['A100', 'A125', 'A130', 'A140']:
                 marc.add_value('library', field['F'])
                 marc.add_identifier('call_number', field['j'])
 

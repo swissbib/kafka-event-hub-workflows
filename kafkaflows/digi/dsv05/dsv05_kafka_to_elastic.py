@@ -12,7 +12,6 @@ import re
 dsv05_dig = ElasticIndex('dsv05-digitised', 'marc', url='http://sb-ues2.swissbib.unibas.ch:9200')
 format_dict = swissbib_format_codes()
 
-
 def parse_date(record: MARCMapper):
     _008_date = record.parse_date_from_008()
     _046_date = record.parse_date_from_046()
@@ -154,9 +153,11 @@ def after_filter(transformed_message: dict) -> bool:
         return False
 
 
-def update(old: dict, new: dict) -> dict:
-    #TODO: Implement this to do something!
-    return old
+def update(new: dict, old: dict) -> dict:
+    for tag in ['digidata', 'hits']:
+        if tag in old:
+            new[tag] = old[tag]
+    return new
 
 
 def run_dsv05_consumer(config):

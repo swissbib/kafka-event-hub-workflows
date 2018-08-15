@@ -11,3 +11,9 @@ Consumer:
 Topic:
   topics:
     - digispace_data
+Elastic:
+  index: add-digidata
+  doc_type: data
+  url: http://sb-ues2.swissbib.unibas.ch:9200
+  timeout: 300
+  mapping: null
