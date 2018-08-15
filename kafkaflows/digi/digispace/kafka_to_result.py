@@ -1,6 +1,7 @@
 from kafka_event_hub.consumers import SimpleConsumer
 from simple_elastic import ElasticIndex
 
+import logging
 import json
 
 db_translation = {
@@ -10,6 +11,7 @@ db_translation = {
 
 
 def run_digispace_kafka_to_result(config):
+    logging.debug('Begin adding digispace data to database.')
     index = ElasticIndex(**config['Elastic'])
 
     consumer = SimpleConsumer(config['consumer.path'])
@@ -35,5 +37,10 @@ def run_digispace_kafka_to_result(config):
                 if 'images' in digidata:
                     record['digidata']['images'] = digidata['images']
                 index.index_into(record, record['identifier'])
+            elif len(results) == 0:
+                logging.error('Found no records for %s form %s.', sys_number, db_translation[db])
+            else:
+                logging.error('Found multiple results for %s from %s.', sys_number, db_translation[db])
+
 
 
