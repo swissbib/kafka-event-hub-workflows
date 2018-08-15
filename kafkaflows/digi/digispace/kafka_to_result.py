@@ -1,5 +1,4 @@
-from kafka_event_hub.consumers import SimpleConsumer
-from simple_elastic import ElasticIndex
+from kafka_event_hub.consumers import ElasticConsumer
 
 import logging
 import json
@@ -10,45 +9,31 @@ db_translation = {
 }
 
 
-def run_digispace_kafka_to_result(config):
-    logging.debug('Begin adding digispace data to database.')
-    index = ElasticIndex(**config['Elastic'])
-    dsv05 = ElasticIndex(**config['Elastic5'])
-    dsv01 = ElasticIndex(**config['Elastic1'])
+def digispace_data_transformation(value: str) -> dict:
+    record = json.loads(value, encoding='utf-8')
 
-    consumer = SimpleConsumer(config['consumer.path'])
+    result = dict()
+    result['identifier'] = record['sys_id']
+    try:
+        db, sys_number = record['sys_id'].split('_')
+    except ValueError:
+        pass
+    else:
+        result['database'] = db_translation[db]
+        result['system_number'] = sys_number
+        if 'images' in record:
+            result['number_of_images'] = record['images']
+
+    return result
+
+
+def run_digispace_kafka_to_result(config):
+    logging.debug('Create digidata elastic index.')
+    consumer = ElasticConsumer(config['consumer.path'])
+    consumer.set_transformation_policy(digispace_data_transformation)
+
     while True:
-        for key, value in consumer.consume(num_messages=100):
-            try:
-                db, sys_number = key.split('_')
-            except ValueError:
-                pass
-            else:
-                query = {
-                    'query': {
-                        'term': {
-                            'identifiers.{}'.format(db_translation[db]): {
-                                'value': sys_number
-                            }
-                        }
-                    }
-                }
-                results = index.scan_index(query=query)
-                if len(results) == 1:
-                    digidata = json.loads(value)
-                    record = results[0]
-                    record['digidata'] = dict()
-                    record['digidata']['is_digitised'] = True
-                    if 'images' in digidata:
-                        record['digidata']['images'] = digidata['images']
-                    if db == '1':
-                        dsv01.index_into(record, record['identifier'])
-                    else:
-                        dsv05.index_into(record, record['identifier'])
-                elif len(results) == 0:
-                    logging.error('Found no records for %s form %s.', sys_number, db_translation[db])
-                else:
-                    logging.error('Found multiple results for %s from %s.', sys_number, db_translation[db])
+        consumer.consume(num_messages=100)
 
 
 
