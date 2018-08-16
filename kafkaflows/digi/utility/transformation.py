@@ -203,9 +203,10 @@ class TransformSruExport(DataTransformation):
             pages = self.marc.result['number_of_pages']
         else:
             self.marc.parse_field_to_subfield('300', 'a', 'extent', 'coverage')
-            num, name = self.parse_coverage_field()
-            if name == 'Seiten':
-                pages = num
+            if 'coverage' in self.marc.result['extent']:
+                num, name = self.parse_coverage_field()
+                if name == 'Seiten':
+                    pages = num
 
         if pages == 0:
             self.marc.add_error_tag('_no_page_value')
