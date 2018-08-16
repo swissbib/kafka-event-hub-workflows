@@ -427,7 +427,7 @@ class TransformSruExport(DataTransformation):
         else:
             return True
 
-    def post_filer(self, transformed_message: dict) -> bool:
+    def post_filter(self, transformed_message: dict) -> bool:
         if 'year' in transformed_message['final']:
             if int(transformed_message['final']['year']) > 1920:
                 return True
