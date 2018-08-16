@@ -12,7 +12,7 @@ if __name__ == '__main__':
     alt_c = Counter()
 
     query = {
-        '_source': ['extent.coverage'],
+        '_source': ['extent.coverage', 'c-format'],
         'query': {
             'exists': {
                 'field': 'extent.coverage'
@@ -28,9 +28,20 @@ if __name__ == '__main__':
     desc_cov_add = list()
     vols_cov = list()
     words = list()
+
+    find_all_w = set()
+    find_all_c = set()
     count = 0
     for results in index.scroll(query=query):
         for record in results:
+            if record['c-format'] in ['DVD / CD', 'Datenbank', 'Objekt', 'Diverse Tonformate']:
+                c['other'] += 1
+                continue
+
+            if record['c-format'] in ['Atlas']:
+                c['atlas'] += 1
+                continue
+
             count += 1
             coverage = record['extent']['coverage']
 
@@ -54,10 +65,16 @@ if __name__ == '__main__':
 
             # Find letters.
             letter = re.search('Brief[e]?', coverage)
+            photo = re.search('(Ph|F)oto', coverage)
 
             half_pages = re.fullmatch('([0-9]+)([½¾]|[.,][0-9]+| [0-9]/[0-9]) (Bl|S)\.', coverage)
 
             find_all_with_addition = re.findall('([0-9]+) (\w+)[ ]?(\(([0-9]+) (\w+)\))?', coverage)
+
+
+            for i in find_all_with_addition:
+                find_all_w.add(i[1])
+                find_all_c.add(i[4])
 
             if re.match('\s+v\.$', coverage):
                 # DONE
@@ -67,6 +84,43 @@ if __name__ == '__main__':
                 # DONE
                 c['pages'] += 1
                 continue
+
+            if match_pages_roman:
+                # DONE
+                result = match_pages_roman.groupdict()
+                try:
+                    roman = fromRoman(result['roman'])
+                except InvalidRomanNumeralError:
+                    pages = int(result['number'])
+                else:
+                    pages = roman + int(result['number'])
+
+                if pages > 0:
+                    c['roman_pages_p_normal_pages'] += 1
+                    continue
+            if match_lfm:
+                # DONE
+                lfm = match_lfm.groupdict()
+                meters = float(lfm['number'].replace(',', '.'))
+
+                if meters > 0:
+                    c['lfm'] += 1
+                    continue
+            if match_postcard:
+                # DONE
+                pages = int(match_postcard.groupdict()['number'])
+
+                if pages > 0:
+                    c['postcards'] += 1
+                    continue
+            if half_pages:
+                # DONE
+                pages = int(half_pages.group(1)) + 1
+
+                if pages > 0:
+                    c['half_pages'] += 1
+                    continue
+
             if letter:
                 # DONE
                 letter_numbers = re.findall('([0-9]+) (\w+)[ ]?(\(([0-9]+) (\w+)\))?', coverage)
@@ -94,39 +148,12 @@ if __name__ == '__main__':
                             pages += int(l[3])
 
                     if pages > 0:
+                        c['letter'] += 1
                         continue
-            if match_pages_roman:
-                # DONE
-                result = match_pages_roman.groupdict()
-                try:
-                    roman = fromRoman(result['roman'])
-                except InvalidRomanNumeralError:
-                    pages = int(result['number'])
-                else:
-                    pages = roman + int(result['number'])
-                c['roman_pages_p_normal_pages'] += 1
-                if pages > 0:
-                    continue
-            if match_lfm:
-                # DONE
-                lfm = match_lfm.groupdict()
-                meters = float(lfm['number'].replace(',', '.'))
-                c['lfm'] += 1
-                if meters > 0:
-                    continue
-            if match_postcard:
-                # DONE
-                pages = int(match_postcard.groupdict()['number'])
-                c['postcards'] += 1
-                if pages > 0:
-                    continue
-            if half_pages:
-                # DONE
-                pages = int(half_pages.group(1)) + 1
-                print(coverage, pages)
-                c['half_pages'] += 1
-                if pages > 0:
-                    continue
+
+            if photo:
+                c['photo'] += 1
+                continue
 
             if len(find_all_with_addition) > 0:
                 pages = 0
@@ -142,9 +169,8 @@ if __name__ == '__main__':
                             and l[4] == '':
                         volumes += int(l[0])
                 if pages > 0 or volumes > 0:
+                    c['find_all'] += 1
                     continue
-                else:
-                    print(find_all_with_addition, coverage)
 
             if match_desc:
                 descriptive_coverage.append(match_desc.groupdict())
@@ -204,6 +230,12 @@ if __name__ == '__main__':
         print(x)
     print('Total: {}'.format(sum(c.values())))
     print('Total records: {}'.format(count))
+
+    with open('find_all_addition.json', 'w') as f:
+        json.dump(sorted(list(find_all_w)), f, ensure_ascii=False, indent='    ')
+
+    with open('find_all_klammer.json', 'w') as f:
+        json.dump(sorted(list(find_all_c)), f, ensure_ascii=False, indent='    ')
 
     missing.close()
     find_all_result.close()

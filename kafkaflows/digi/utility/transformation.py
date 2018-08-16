@@ -315,13 +315,12 @@ class TransformSruExport(DataTransformation):
                         pages += int(l[3])
                 if pages > 0:
                     return pages, 'Seiten'
-            ## END LETTERS
+            # END LETTERS
             half_pages = re.fullmatch('([0-9]+)([½¾]|[.,][0-9]+| [0-9]/[0-9]) (Bl|S)\.', coverage)
             if half_pages:
                 pages = int(half_pages.group(1)) + 1
                 if pages > 0:
                     return pages, 'Seiten'
-
 
     def parse_record_type(self):
         """Defines a general type for the record.
@@ -428,7 +427,7 @@ class TransformSruExport(DataTransformation):
         else:
             return True
 
-    def post_filter(self, transformed_message: dict) -> bool:
+    def post_filer(self, transformed_message: dict) -> bool:
         if 'year' in transformed_message['final']:
             if int(transformed_message['final']['year']) > 1920:
                 return True
