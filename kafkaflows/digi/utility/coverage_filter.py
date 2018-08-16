@@ -189,6 +189,8 @@ if __name__ == '__main__':
                                      '(mit |und )?'
                                      '(?P<word>[A-Za-zöäü ]+[A-Za-zöäü]+)'
                                      '(.,;| mit| und)?', coverage)
+
+                c['else'] += 1
                 if len(matches) > 0:
                     find_all.extend([f_match[2] for f_match in matches])
                     find_all_result.write(str(matches) + '\n')
