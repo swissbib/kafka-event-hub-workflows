@@ -4,3 +4,4 @@ requests
 pymarc
 isodate
 swissbib-kafka-event-hub
+roman

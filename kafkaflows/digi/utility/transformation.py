@@ -3,7 +3,9 @@ from kafkaflows.digi.utility.vufind_format_codes import swissbib_format_codes
 
 from kafka_event_hub.consumers.utility import DataTransformation
 from simple_elastic import ElasticIndex
+from roman import fromRoman, InvalidRomanNumeralError
 
+import typing
 import logging
 import re
 
@@ -56,6 +58,8 @@ class TransformSruExport(DataTransformation):
         """Enriching the message from other data sources."""
         self.enrich_digidata()
         self.enrich_swissbib_hits()
+        self.enrich_opac_hits()
+        self.enrich_loans_and_reservations()
 
     def enrich_digidata(self):
         """Loads data from the digidata elastic repository.
@@ -181,26 +185,143 @@ class TransformSruExport(DataTransformation):
             self.marc.add_error_tag('_no_valid_date')
 
     def parse_number_of_pages(self):
-        self.marc.parse_field_to_subfield('300', 'a', 'extent', 'coverage')
+        """Figure out the number of pages!
 
-        if 'coverage' in self.marc.result['extent']:
-            matches = re.findall('\d+', self.marc.result['extent']['coverage'])
-            _sum = 0
-            for match in matches:
-                _sum += int(match)
-            if re.search('Bd.|B[äa]nd[e]?|[Tt]omes|T((h)?eil)?.|[Vv]ol.|[Hh]eft(en)?',
-                         self.marc.result['extent']['coverage']):
-                self.marc.add_value_sub_sub('final', 'extent', 'unit', _sum)
-                self.marc.add_value_sub_sub('final', 'extent', 'unit_name', 'Band')
-            else:
-                self.marc.add_value_sub_sub('final', 'extent', 'unit', 1)
-                self.marc.add_value_sub_sub('final', 'extent', 'unit_name', 'Dossier')
-                self.marc.add_value_sub_sub('final', 'extent', 'sub_unit', _sum)
-                self.marc.add_value_sub_sub('final', 'extent', 'sub_unit_name', 'Seiten/Blätter')
+        First source: digidata number of images.
+        Second source: coverage
+        Third source: estimates.
+
+        TODO: Improve this a lot!
+        """
+        pages = 0
+
+        if 'number_of_pages' in self.marc.result:
+            pages = self.marc.result['number_of_pages']
         else:
-            self.marc.add_error_tag('_no_coverage')
-            self.marc.add_value_sub_sub('final', 'extent', 'unit', 1)
-            self.marc.add_value_sub_sub('final', 'extent', 'unit_name', 'Dossier')
+            self.marc.parse_field_to_subfield('300', 'a', 'extent', 'coverage')
+            if 'coverage' in self.marc.result['extent']:
+                coverage = self.marc.result['extent']['coverage']
+                if re.match('', coverage):
+                    pass
+
+                matches = re.findall('\d+', self.marc.result['extent']['coverage'])
+                _sum = 0
+                for match in matches:
+                    _sum += int(match)
+                if re.search('Bd[.]?|B[äa]nd[e]?|[Tt]omes|T((h)?eil)?.|[Vv]ol.|[Hh]eft(en)?',
+                             self.marc.result['extent']['coverage']):
+                    self.marc.add_value_sub_sub('final', 'extent', 'unit', _sum)
+                    self.marc.add_value_sub_sub('final', 'extent', 'unit_name', 'Band')
+                else:
+                    self.marc.add_value_sub_sub('final', 'extent', 'unit', 1)
+                    self.marc.add_value_sub_sub('final', 'extent', 'unit_name', 'Dossier')
+                    self.marc.add_value_sub_sub('final', 'extent', 'sub_unit', _sum)
+                    self.marc.add_value_sub_sub('final', 'extent', 'sub_unit_name', 'Seiten/Blätter')
+
+        if pages == 0:
+            self.marc.add_error_tag('_no_page_value')
+            # TODO: Add estimates!
+        else:
+            self.marc.add_value_sub('final', 'pages', pages)
+
+    def parse_coverage_field(self) -> typing.Tuple[float, str]:
+        """Parses various values from the coverage field and returns them as tuple:
+
+        (number of unit, name of unit)
+
+        Possible units are:
+
+        Laufmeter
+
+        Seiten
+
+        Band
+        Dossier
+
+        Gegenstand
+
+        Digital (CD, DVD, Online-Resource)
+
+        Anderes
+
+        None
+
+        """
+        coverage = self.marc.result['extent']['coverage']
+
+        # No useful coverage value.
+        # ca. 140'000 records.
+        if re.match('\s+v\.$', coverage):
+            return 0, 'None'
+
+        # Simple number of pages:
+        match_pages = re.fullmatch('(\[)?(?P<number>[0-9]+)(\])? ([Ss](eiten|.)?|p(ages)?)', coverage)
+        if match_pages:
+            return int(match_pages.groupdict()['number']), 'Seiten'
+
+        # Number of pages with roman numeral:
+        # will ignore roman numerals which are not valid.
+        match_pages_roman = re.fullmatch('(?P<roman>[CVXILMcvixlm]+)[,.] (?P<number>[0-9]+) ([Ss](eiten|.)?|p(ages)?)$', coverage)
+        if match_pages_roman:
+            result = match_pages_roman.groupdict()
+            try:
+                roman = fromRoman(result['roman'])
+            except InvalidRomanNumeralError:
+                pages = int(result['number'])
+            else:
+                pages = roman + int(result['number'])
+            return pages, 'Seiten'
+
+        # Laufmeter
+        match_lfm = re.fullmatch('([Cc]a\. )?(?P<number>[0-9]+,[0-9]+) (m|Lfm|Laufmeter|lfd.m)( \(.*\))?', coverage)
+        if match_lfm:
+            return float(match_lfm.groupdict()['number'].replace(',', '.')), 'Laufmeter'
+
+        # Postcards
+        # X Bl. ; A4/A5/X cm
+        match_postcard = re.fullmatch('(?P<number>[0-9]+) Bl\. ; '
+                                      '((?P<format>[ ]?[456])|(?P<size>[0-9]+)[ ]?cm)', coverage)
+        if match_postcard:
+            return int(match_postcard.groupdict()['number']), 'Seiten'
+
+        # Find letters!
+        letters = re.search('Brief[e]?', coverage)
+
+        if letters:
+            # Select pages or letters. Both are counted as a page each.
+            # Fairly accurate as long as the source is right...
+            letter_numbers = re.findall('([0-9]+) (\w+)[ ]?(\(([0-9]+) (\w+)\))?', coverage)
+
+            if len(letter_numbers) > 0:
+                pages = 0
+                for l in letter_numbers:
+                    if l[4] == '' and l[1] in ['Briefe', 'Brief', 'Briefen',
+                                               'Antwortbriefe', 'Antwortbrief', 'Einzelbriefe', 'Briefwechsel',
+                                               'Gegenbriefe', 'Gegenbrief',
+                                               'Karte', 'Karten', 'Zeitungsausschnitt',
+                                               'Postkarte', 'Postkarten',
+                                               'Telegramme', 'Telegramm', 'Kurznachricht',
+                                               'Ansichtskarten', 'Ansichtskarte', 'Blatt',
+                                               'Kärtchen', 'Briefkarte', 'Aerogarmm', 'Manuskripte', 'Gefalteter',
+                                               'Doppelkarten', 'Dokumente', 'Grundrisse', 'Zettel',
+                                               'Neujahreskarten', 'weiterer', 'numerierte', 'Zeitungsauschnitt',
+                                               'Zeugnis', 'Neujahrskarten', 'Stück', 'Briefkarten',
+                                               'Bl', 'S', 'Fotonegative', 'Fotopositive', 'Artikeln'
+                                               ]:
+                        pages += int(l[0])
+                    elif l[1] in ['Couvert', 'Schachtel', 'Band'] and l[4] in ['Briefe']:
+                        pages += int(l[3])
+                    elif l[4] in ['Blatt', 'Bl']:
+                        pages += int(l[3])
+                if pages > 0:
+                    return pages, 'Seiten'
+            ## END LETTERS
+            half_pages = re.fullmatch('([0-9]+)([½¾]|[.,][0-9]+| [0-9]/[0-9]) (Bl|S)\.', coverage)
+            if half_pages:
+                pages = int(half_pages.group(1)) + 1
+                if pages > 0:
+                    return pages, 'Seiten'
+
 
     def parse_record_type(self):
         """Defines a general type for the record.
@@ -229,13 +350,19 @@ class TransformSruExport(DataTransformation):
         """Parses the call number of this record has.
 
         Adds the library it belongs to as well. The call number is further
-        indexed in parts to create facets."""
+        indexed in parts to create facets.
+
+        Only books from A100 & A125 are used.
+
+        No books from A140 or A130 are older than 1900 and part belong to UB.
+        """
         for field in self.marc.get_fields('949'):
-            if field['F'] in ['A100', 'A125', 'A130', 'A140']:
+
+            if field['F'] in ['A100', 'A125']:
                 self.marc.add_value('library', field['F'])
-                self.marc.add_identifier('call_number', field['j'])
+                self.marc.append_value_sub('exemplar', 'call_number', field['j'])
                 if field['s'] is not None:
-                    self.marc.add_identifier('secondary_call_number', field['s'])
+                    self.marc.append_value_sub('exemplar', 'secondary_call_number', field['s'])
 
     def parse_format_codes(self):
         """Parse the format codes and replace them with human readable forms.
@@ -296,7 +423,7 @@ class TransformSruExport(DataTransformation):
 
     def pre_filter(self, message: str) -> bool:
         """Keep only records which belong to Universitätsbibliothek Basel."""
-        if re.search('{"F": "(A100|A125|A130|A140)"},', message):
+        if re.search('{"F": "(A100|A125)"},', message):
             return False
         else:
             return True
