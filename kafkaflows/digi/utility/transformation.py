@@ -134,10 +134,14 @@ class TransformSruExport(DataTransformation):
             }
         }
         hits = len(self.opac.scan_index(query=query))
-        if int(self.marc.result['identifier']) > 320000 and self._database == 'dsv01':
+        identifier = int(self.marc.result['identifiers'][self._database])
+        if identifier > 320000 and self._database == 'dsv01':
             self.marc.add_value('opac_access', hits)
-        elif int(self.marc.result['identifier']) <= 320000 and self._database == 'dsv05':
+        elif identifier <= 320000 and self._database == 'dsv05':
             self.marc.add_value('opac_access', hits)
+        elif identifier <= 320000 and self._database == 'dsv01':
+            self.marc.add_value('opac_access', hits)
+            self.marc.add_error_tag('_maybe_dsv05_hits')
 
     def enrich_loans_and_reservations(self):
         """Gets the number of loans and reservations from an elastic index.
@@ -306,7 +310,7 @@ class TransformSruExport(DataTransformation):
                 if pages > 0:
                     return pages, 'Seiten'
 
-            return 0, 'None'
+        return 0, 'None'
 
     def parse_record_type(self):
         """Defines a general type for the record.
