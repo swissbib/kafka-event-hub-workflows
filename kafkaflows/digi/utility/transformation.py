@@ -199,24 +199,9 @@ class TransformSruExport(DataTransformation):
             pages = self.marc.result['number_of_pages']
         else:
             self.marc.parse_field_to_subfield('300', 'a', 'extent', 'coverage')
-            if 'coverage' in self.marc.result['extent']:
-                coverage = self.marc.result['extent']['coverage']
-                if re.match('', coverage):
-                    pass
-
-                matches = re.findall('\d+', self.marc.result['extent']['coverage'])
-                _sum = 0
-                for match in matches:
-                    _sum += int(match)
-                if re.search('Bd[.]?|B[äa]nd[e]?|[Tt]omes|T((h)?eil)?.|[Vv]ol.|[Hh]eft(en)?',
-                             self.marc.result['extent']['coverage']):
-                    self.marc.add_value_sub_sub('final', 'extent', 'unit', _sum)
-                    self.marc.add_value_sub_sub('final', 'extent', 'unit_name', 'Band')
-                else:
-                    self.marc.add_value_sub_sub('final', 'extent', 'unit', 1)
-                    self.marc.add_value_sub_sub('final', 'extent', 'unit_name', 'Dossier')
-                    self.marc.add_value_sub_sub('final', 'extent', 'sub_unit', _sum)
-                    self.marc.add_value_sub_sub('final', 'extent', 'sub_unit_name', 'Seiten/Blätter')
+            num, name = self.parse_coverage_field()
+            if name == 'Seiten':
+                pages = num
 
         if pages == 0:
             self.marc.add_error_tag('_no_page_value')
@@ -248,7 +233,6 @@ class TransformSruExport(DataTransformation):
 
         """
         coverage = self.marc.result['extent']['coverage']
-
         # No useful coverage value.
         # ca. 140'000 records.
         if re.match('\s+v\.$', coverage):
@@ -321,6 +305,8 @@ class TransformSruExport(DataTransformation):
                 pages = int(half_pages.group(1)) + 1
                 if pages > 0:
                     return pages, 'Seiten'
+
+            return 0, 'None'
 
     def parse_record_type(self):
         """Defines a general type for the record.
