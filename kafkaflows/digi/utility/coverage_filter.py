@@ -1,7 +1,7 @@
 from simple_elastic import ElasticIndex
 from collections import Counter
 
-from roman import fromRoman, InvalidRomanNumeralError
+from roman import fromRoman, InvalidRomanNumeralError, romanNumeralPattern
 import json
 import re
 
@@ -29,17 +29,24 @@ if __name__ == '__main__':
     vols_cov = list()
     words = list()
 
+    image_words = set()
+    partitur_words = set()
+
     find_all_w = set()
     find_all_c = set()
     count = 0
     for results in index.scroll(query=query):
         for record in results:
-            if record['c-format'] in ['DVD / CD', 'Datenbank', 'Objekt', 'Diverse Tonformate']:
+            if record['c-format'] in ['DVD / CD', 'Objekt', 'Diverse Tonformate']:
                 c['other'] += 1
                 continue
 
-            if record['c-format'] in ['Atlas']:
-                c['atlas'] += 1
+            if record['c-format'] in ['Schallplatte']:
+                c['schallplatte'] += 1
+                continue
+
+            if record['c-format'] in ['Zeitung', 'Datenbank']:
+                c['periodikum'] += 1
                 continue
 
             count += 1
@@ -74,6 +81,73 @@ if __name__ == '__main__':
             for i in find_all_with_addition:
                 find_all_w.add(i[1])
                 find_all_c.add(i[4])
+
+            if record['c-format'] in ['Diverse Bildformate']:
+                images = re.findall('(\d+) (\w+)', coverage)
+                for i in images:
+                    image_words.add(i[1])
+
+            if record['c-format'] in ['Partitur']:
+                partitur = re.findall('(\d+) (\w+)', coverage)
+                for i in partitur:
+                    partitur_words.add(i[1])
+
+            if record['c-format'] in ['Atlas']:
+                pages = 0
+                match = re.findall('(\d+) (Taf|Kt|S(eiten)?|(Titel)?[Bb]l(ätter(n)?)?|Kart(e(n)?)?)', coverage)
+                if len(match) > 0:
+                    for l in match:
+                        pages += int(l[0])
+
+                if pages > 0:
+                    c['atlas'] += 1
+                    continue
+
+            if record['c-format'] in ['Karte']:
+                pages = 0
+                match = re.findall('(\d+) (\w+)', coverage)
+                if len(match) > 0:
+                    for l in match:
+                        pages += int(l[0])
+
+                if pages > 0:
+                    c['map'] += 1
+                    continue
+
+            if record['c-format'] in ['Klavierauszug']:
+                pages = 0
+                match = re.search('(\d+) (S|p)', coverage)
+                if match:
+                    pages = int(match.group(1))
+
+                c['piano'] += 1
+                if pages > 0:
+                    continue
+                else:
+                    continue
+
+            if record['c-format'] in ['Partitur']:
+                pages = 0
+                match = re.search('(\d+) (S(eiten)?|p|Bl(ätter)?)', coverage)
+                if match:
+                    pages += int(match.group(1))
+
+                match = find_roman_numeral.search(coverage)
+                if match:
+                    roman_number = roman_numeral.fullmatch(match.group(1))
+                    if roman_number:
+                        pages += fromRoman(roman_number.group(0))
+                c['partitur'] += 1
+                if pages > 0:
+
+                    continue
+                else:
+                    band = 0
+                    match = re.search('(\d+) (Abt|B|C|H[^y]|He|K|[Pp]art|Ser|T|[Vv]ol)', coverage)
+                    if match:
+                        band += int(match.group(1))
+                        print(coverage, band)
+                    continue
 
             if re.match('\s+v\.$', coverage):
                 # DONE
@@ -151,8 +225,14 @@ if __name__ == '__main__':
                         continue
 
             if photo:
-                c['photo'] += 1
-                continue
+                pages = 0
+                match = re.search('(\d+) (\w+ )?((Ph|F)oto|Repro)', coverage)
+                if match:
+                    pages = int(match.group(1))
+
+                if pages > 0:
+                    c['photo'] += 1
+                    continue
 
             if len(find_all_with_addition) > 0:
                 pages = 0
@@ -237,6 +317,12 @@ if __name__ == '__main__':
 
     with open('find_all_klammer.json', 'w') as f:
         json.dump(sorted(list(find_all_c)), f, ensure_ascii=False, indent='    ')
+
+    with open('image_words.json', 'w') as f:
+        json.dump(sorted(list(image_words)), f, ensure_ascii=False, indent='    ')
+
+    with open('partitur_words.json', 'w') as f:
+        json.dump(sorted(list(partitur_words)), f, ensure_ascii=False, indent='    ')
 
     missing.close()
     find_all_result.close()
