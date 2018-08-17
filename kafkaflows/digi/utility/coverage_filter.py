@@ -5,6 +5,10 @@ from roman import fromRoman, InvalidRomanNumeralError, romanNumeralPattern
 import json
 import re
 
+
+find_roman_numeral = re.compile('([MCLXVI]+)[^a-z]')
+roman_numeral = re.compile('^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$')
+
 if __name__ == '__main__':
     index = ElasticIndex('kafka*', 'record')
 
@@ -139,14 +143,12 @@ if __name__ == '__main__':
                         pages += fromRoman(roman_number.group(0))
                 c['partitur'] += 1
                 if pages > 0:
-
                     continue
                 else:
                     band = 0
                     match = re.search('(\d+) (Abt|B|C|H[^y]|He|K|[Pp]art|Ser|T|[Vv]ol)', coverage)
                     if match:
                         band += int(match.group(1))
-                        print(coverage, band)
                     continue
 
             if re.match('\s+v\.$', coverage):
@@ -254,15 +256,19 @@ if __name__ == '__main__':
             if match_desc:
                 descriptive_coverage.append(match_desc.groupdict())
                 c['desc'] += 1
+                continue
             elif match_2:
                 desc_cov_add.append(match_2.groupdict())
                 c['desc_klammer'] += 1
+                continue
             elif match_3:
                 vols_cov.append(match_3.groupdict())
                 c['vols'] += 1
+                continue
             elif match_word_only:
                 words.append(match_word_only.groupdict())
                 c['words'] += 1
+                continue
             else:
                 matches = re.findall('[\[]?(?P<number>[0-9]+)[\]]? '
                                      '(mit |und )?'
