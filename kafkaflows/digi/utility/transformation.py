@@ -11,6 +11,9 @@ import re
 
 format_dict = swissbib_format_codes()
 
+find_roman_numeral = re.compile('([MCLXVI]+)[^a-z]')
+roman_numeral = re.compile('^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$')
+
 
 class TransformSruExport(DataTransformation):
 
@@ -205,10 +208,22 @@ class TransformSruExport(DataTransformation):
             pages = self.marc.result['number_of_pages']
         else:
             self.marc.parse_field_to_subfield('300', 'a', 'extent', 'coverage')
-            if 'coverage' in self.marc.result['extent']:
-                num, name = self.parse_coverage_field()
-                if name == 'Seiten':
-                    pages = num
+            num = 0
+            name = 'None'
+            if 'c-format' in self.marc.result:
+                if self.marc.result['c-format'] in ['Schallplatte', 'Diverse Filmformate', 'Diverse Tonformate']:
+                    num = 1
+                    name = 'Gegenstand'
+                if self.marc.result['c-format'] in ['Datenbank', 'Zeitung']:
+                    num = 0
+                    name = 'Periodikum'
+
+            if name == 'None':
+                if 'coverage' in self.marc.result['extent']:
+                    num, name = self.parse_coverage_field()
+
+            if name == 'Seiten':
+                pages = num
 
         if pages == 0:
             self.marc.add_error_tag('_no_page_value')
@@ -240,6 +255,54 @@ class TransformSruExport(DataTransformation):
 
         """
         coverage = self.marc.result['extent']['coverage']
+        swisbib_format = self.marc.result['c-format']
+
+        if swisbib_format == 'Atlas':
+            pages = 0
+            match = re.findall('(\d+) (Taf|Kt|S(eiten)?|(Titel)?[Bb]l(ätter(n)?)?|Kart(e(n)?)?)', coverage)
+            if len(match) > 0:
+                for l in match:
+                    pages += int(l[0])
+
+            if pages > 0:
+                return pages, 'Seiten'
+
+        if swisbib_format in ['Klavierauszug']:
+            pages = 0
+            match = re.search('(\d+) (S|p)', coverage)
+            if match:
+                pages = int(match.group(1))
+
+            if pages > 0:
+                return pages, 'Seiten'
+            else:
+                # TODO: Nachfragen ob Partituren eine eigene Seitenzahl erhalten sollten.
+                return 1, 'Band'
+
+        if swisbib_format in ['Partitur']:
+            pages = 0
+            match = re.search('(\d+) (S(eiten)?|p|Bl(ätter)?)', coverage)
+            if match:
+                pages += int(match.group(1))
+
+            match = find_roman_numeral.search(coverage)
+            if match:
+                roman_number = roman_numeral.fullmatch(match.group(1))
+                if roman_number:
+                    pages += fromRoman(roman_number.group(0))
+            if pages > 0:
+                return pages, 'Seiten'
+            else:
+                band = 0
+                match = re.search('(\d+) (Abt|B|C|H[^y]|He|K|[Pp]art|Ser|T|[Vv]ol)', coverage)
+                if match:
+                    band += int(match.group(1))
+                # TODO: Document Partitur
+                if band > 0:
+                    return band, 'Band'
+                else:
+                    return 1, 'Band'
+
         # No useful coverage value.
         # ca. 140'000 records.
         if re.match('\s+v\.$', coverage):
@@ -275,6 +338,11 @@ class TransformSruExport(DataTransformation):
         if match_postcard:
             return int(match_postcard.groupdict()['number']), 'Seiten'
 
+        # Fotos
+        match = re.search('(\d+) (\w+ )?((Ph|F)oto|Repro)', coverage)
+        if match:
+            return int(match.group(1)), 'Seiten'
+
         # Find letters!
         letters = re.search('Brief[e]?', coverage)
 
@@ -307,11 +375,13 @@ class TransformSruExport(DataTransformation):
                 if pages > 0:
                     return pages, 'Seiten'
             # END LETTERS
-            half_pages = re.fullmatch('([0-9]+)([½¾]|[.,][0-9]+| [0-9]/[0-9]) (Bl|S)\.', coverage)
-            if half_pages:
-                pages = int(half_pages.group(1)) + 1
-                if pages > 0:
-                    return pages, 'Seiten'
+
+        # part pages
+        half_pages = re.fullmatch('([0-9]+)([½¾]|[.,][0-9]+| [0-9]/[0-9]) (Bl|S)\.', coverage)
+        if half_pages:
+            pages = int(half_pages.group(1)) + 1
+            if pages > 0:
+                return pages, 'Seiten'
 
         return 0, 'None'
 

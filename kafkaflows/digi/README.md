@@ -45,3 +45,17 @@ logs of the library's old web-catalogue, which is still in use.
 Each click on a records title and other pages, generates a single
 request where the system number is visible. These are 
 collected and indexed in elasticsearch as well.
+
+
+Nutzungsanalyse:
+
+Was ist da:
+OPAC Access Hits 2016 - 08.2018
+Swissbib (green, orange, jus & sru) 12.2017 - present
+Ausleihen + Reservationen im dsv01
+
+
+Was fehlt:
+Kopieraufträge
+Ausleihen dsv05
+Fernleihen
