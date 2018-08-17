@@ -71,7 +71,6 @@ if __name__ == '__main__':
 
             find_all_with_addition = re.findall('([0-9]+) (\w+)[ ]?(\(([0-9]+) (\w+)\))?', coverage)
 
-
             for i in find_all_with_addition:
                 find_all_w.add(i[1])
                 find_all_c.add(i[4])
