@@ -41,13 +41,7 @@ if __name__ == '__main__':
     count = 0
     for results in index.scroll(query=query):
         for record in results:
-            if record['c-format'] in ['DVD / CD', 'Objekt', 'Diverse Tonformate']:
-                c['other'] += 1
-                continue
 
-            if record['c-format'] in ['Schallplatte']:
-                c['schallplatte'] += 1
-                continue
 
             if record['c-format'] in ['Zeitung', 'Datenbank']:
                 c['periodikum'] += 1
@@ -68,11 +62,11 @@ if __name__ == '__main__':
                                           '((?P<format>[ ]?[456])|(?P<size>[0-9]+)[ ]?cm)', coverage)
 
             # Laufmeter
-            match_lfm = re.fullmatch('([Cc]a\. )?(?P<number>[0-9]+,[0-9]+) (m|Lfm|Laufmeter|lfd.m)( \(.*\))?', coverage)
+            match_lfm = re.fullmatch('([Cc]a\. )?(?P<number>[0-9]+,[0-9]+) (m|Lfm|Laufmeter|lfd\.m)( \(.*\))?', coverage)
 
             # Roman numbers with page number.
             match_pages_roman = re.fullmatch(
-                '(?P<roman>[CVXILMcvixlm]+)[,.] (?P<number>[0-9]+) ([Ss](eiten|.)?|p(ages)?)$', coverage)
+                '(?P<roman>[CVXILMcvixlm]+)[,.] (?P<number>[0-9]+) ([Ss](eiten|\.)?|p(ages)?)', coverage)
 
             # Find letters.
             letter = re.search('Brief[e]?', coverage)
@@ -85,6 +79,10 @@ if __name__ == '__main__':
             for i in find_all_with_addition:
                 find_all_w.add(i[1])
                 find_all_c.add(i[4])
+
+            if re.fullmatch('\s+v\.', coverage):
+                c['none'] += 1
+                continue
 
             if record['c-format'] in ['Diverse Bildformate']:
                 images = re.findall('(\d+) (\w+)', coverage)
@@ -150,6 +148,11 @@ if __name__ == '__main__':
                     if match:
                         band += int(match.group(1))
                     continue
+
+            if record['c-format'] in ['Noten']:
+                print(coverage)
+                c['noten'] += 1
+                continue
 
             if re.match('\s+v\.$', coverage):
                 # DONE
@@ -252,6 +255,9 @@ if __name__ == '__main__':
                 if pages > 0 or volumes > 0:
                     c['find_all'] += 1
                     continue
+
+            c['end'] += 1
+            continue
 
             if match_desc:
                 descriptive_coverage.append(match_desc.groupdict())
