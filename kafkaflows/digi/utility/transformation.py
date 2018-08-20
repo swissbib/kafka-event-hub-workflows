@@ -5,15 +5,25 @@ from kafka_event_hub.consumers.utility import DataTransformation
 from simple_elastic import ElasticIndex
 from roman import fromRoman, InvalidRomanNumeralError
 
+from statistics import median
 import typing
 import logging
 import re
+
 
 format_dict = swissbib_format_codes()
 
 find_roman_numeral = re.compile('([MCLXVI]+)[^a-z]')
 roman_numeral = re.compile('^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$')
 
+empty = re.compile('\s+v\.')
+
+regex_pages = re.compile('[\[]?(\d+)[\]]? (S( |\.|,|\)|$)|Seiten|p|Bl(ätter)?|Bogen|P$)')
+regex_pages_part = re.compile('S\. (\d+)-(\d+)')
+regex_vol = re.compile('(No|Vol|Bd|Nr|H|Heft)[.]?[ ]?([0-9]+)(\.([0-9]+))?([ \.,]|$)')
+regex_series = re.compile('(No|H|Nr|Heft)[.]?[ ]?([0-9]+)-([0-9]+)')
+regex_series_open = re.compile('(No|H|Nr|Heft)[.]?[ ]?([0-9]+)-')
+regex_laufmeter = re.compile('(\d+,\d+) Lfm')
 
 class TransformSruExport(DataTransformation):
 
@@ -26,6 +36,7 @@ class TransformSruExport(DataTransformation):
         self.swissbib_elk_host = config['swissbib.host']
         self.opac = ElasticIndex(**config['opac'])
         self.reservations = ElasticIndex(**config['reservations'])
+        self.page_converstions = config['page-conversions']
 
     def transform(self, value: str) -> dict:
         self.marc = MARCMapper(value)
@@ -274,22 +285,11 @@ class TransformSruExport(DataTransformation):
             if pages > 0:
                 return pages, 'Seiten'
 
-        if swisbib_format in ['Klavierauszug']:
+        elif swisbib_format in ['Klavierauszug', 'Partitur', 'Noten']:
+            if empty.search(coverage):
+                return 3, 'Partitur'
             pages = 0
-            match = re.search('(\d+) (S|p)', coverage)
-            if match:
-                pages = int(match.group(1))
-
-            if pages > 0:
-                return pages, 'Seiten'
-            else:
-                # TODO: Nachfragen ob Partituren eine eigene Seitenzahl erhalten sollten.
-                # 50 Seiten
-                return 1, 'Partitur'
-
-        if swisbib_format in ['Partitur']:
-            pages = 0
-            match = re.search('(\d+) (S(eiten)?|p|Bl(ätter)?)', coverage)
+            match = regex_pages.search(coverage)
             if match:
                 pages += int(match.group(1))
 
@@ -298,19 +298,30 @@ class TransformSruExport(DataTransformation):
                 roman_number = roman_numeral.fullmatch(match.group(1))
                 if roman_number:
                     pages += fromRoman(roman_number.group(0))
+
+            match = regex_pages_part.search(coverage)
+            if match:
+                # Bsp: S. 24-35
+                pages = int(match.group(2)) - int(match.group(1)) + 1
+
             if pages > 0:
                 return pages, 'Seiten'
             else:
-                band = 0
-                match = re.search('(\d+) (Abt|B|C|H[^y]|He|K|[Pp]art|Ser|T|[Vv]ol)', coverage)
+                match = re.search('(\d+) (Abt|B|C|H$|He|K|[Pp]art|Ser|St|T|[Vv]ol)', coverage)
+                volume = regex_vol.findall(coverage)
+                series = regex_series.findall(coverage)
+                lfm = regex_laufmeter.fullmatch(coverage)
                 if match:
-                    band += int(match.group(1))
-                # TODO: Document Partitur
-                # average 50 pages
-                if band > 0:
-                    return band, 'Partitur'
-                else:
+                    return int(match.group(1)), 'Partitur'
+                elif len(volume) > 0:
                     return 1, 'Partitur'
+                elif lfm:
+                    lfm = float(lfm.group(1).replace(',', '.')) * 8000
+                    return lfm, 'Seiten'
+                elif len(series) > 0:
+                    return series[0][2] - series[0][1] + 1, 'Partitur'
+                else:
+                    return 3, 'Partitur'
 
         # No useful coverage value.
         # ca. 140'000 records.
