@@ -435,7 +435,7 @@ class TransformSruExport(DataTransformation):
         for field in self.marc.get_fields('949'):
 
             if field['F'] in ['A100', 'A125']:
-                self.marc.add_value('library', field['F'])
+                self.marc.append_value('library', field['F'])
                 self.marc.append_value('call_number', field['j'])
 
         # TODO: Implement a way to process all the call numbers, since one title
@@ -459,6 +459,7 @@ class TransformSruExport(DataTransformation):
                 else:
                     issue_number = None
                     volume_number = None
+                    values = values[0].split(' ')
                     self.marc.add_error_tag('_invalid_call_number')
             else:
                 issue_number = None
