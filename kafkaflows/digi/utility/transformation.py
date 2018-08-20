@@ -453,16 +453,17 @@ class TransformSruExport(DataTransformation):
                 if len(values) == 2:
                     issue_number = None
                     volume_number = values[1].strip()
-                    values = values.split(' ')[0]
+                    values = values[0].split(' ')
                 elif len(values) == 3:
                     issue_number = values[2].strip()
                     volume_number = values[1].strip()
-                    values = values.split(' ')[0]
+                    values = values[0].split(' ')
                 else:
                     issue_number = None
                     volume_number = None
                     self.marc.add_error_tag('_invalid_call_number')
             else:
+                issue_number = None
                 volume_number = None
                 values = call_number.split(' ')
             self.marc.add_value_sub('filter', 'prefix', values[0])
