@@ -166,11 +166,17 @@ class TransformSruExport(DataTransformation):
                 }
             }
             results = self.reservations.scan_index(query=query)
+            total_reservations = 0
+            total_loans = 0
             for record in results:
                 if 'reservations' in record:
-                    self.marc.add_value_sub(record['year'], 'reservations', record['reservations'])
+                    total_reservations += record['reservations']
+                    self.marc.add_value_sub('reservations', record['year'], record['reservations'])
                 if 'loans' in record:
-                    self.marc.add_value_sub(record['year'], 'loans', record['loans'])
+                    total_loans += record['loans']
+                    self.marc.add_value_sub('loans', record['year'], record['loans'])
+            self.marc.add_value_sub('reservations', 'total', total_reservations)
+            self.marc.add_value_sub('loans', 'total', total_loans)
 
     def parse_date(self):
         """Parsing the date from the various possible fields. Stores where the information was taken from."""
