@@ -461,6 +461,7 @@ class TransformSruExport(DataTransformation):
                 else:
                     issue_number = None
                     volume_number = None
+                    self.marc.add_error_tag('_invalid_call_number')
             else:
                 volume_number = None
                 values = call_number.split(' ')
