@@ -36,6 +36,8 @@ class TransformSruExport(DataTransformation):
             if self.marc['024']['a'] is not None:
                 self.marc.add_identifier('doi', self.marc['024']['a'])
 
+        self.marc.add_identifier('swissbib', self.marc['001'].value())
+
         if self._database == 'dsv01':
             for _035 in self.marc.get_fields('035'):
                 if _035['a'] is not None:
@@ -372,7 +374,7 @@ class TransformSruExport(DataTransformation):
                                                ]:
                         pages += int(l[0])
                     elif l[1] in ['Couvert', 'Schachtel', 'Band'] and l[4] in ['Briefe']:
-                        pages += int(l[3])
+                        pages += int(l[3]) * 3
                     elif l[4] in ['Blatt', 'Bl']:
                         pages += int(l[3])
                 if pages > 0:
@@ -437,6 +439,30 @@ class TransformSruExport(DataTransformation):
                 self.marc.append_value_sub('exemplar', 'call_number', field['j'])
                 if field['s'] is not None:
                     self.marc.append_value_sub('exemplar', 'secondary_call_number', field['s'])
+
+        # TODO: Implement a way to process all the call numbers, since one title
+        # can have many of them.
+        # currently just picks the first one.
+        # books can have multiple call numbers for two reasons:
+        # 1. The library owns more than one item.
+        # 2. The bibliographic record describes multiple parts of one title.
+        if 'call_number' in self.marc.result['exemplar']:
+            call_number = self.marc.result['exemplar']['call_number'][0]
+            if ':' in call_number:
+                call_number_part, volume_number = call_number.split(':')
+                volume_number = volume_number.strip()
+                values = call_number_part.split(' ')
+            else:
+                volume_number = None
+                values = call_number.split(' ')
+            self.marc.add_value_sub('filter', 'prefix', values[0])
+            count = 0
+            for value in values[1:]:
+                count += 1
+                self.marc.add_value_sub('filter', 'part-{}'.format(count), value)
+
+            if volume_number:
+                self.marc.add_value_sub('filter', 'volume', volume_number)
 
     def parse_format_codes(self):
         """Parse the format codes and replace them with human readable forms.
@@ -504,14 +530,20 @@ class TransformSruExport(DataTransformation):
             return True
 
     def post_filter(self, transformed_message: dict) -> bool:
+        # Remove any record which is newer than 1920.
         if 'year' in transformed_message['final']:
             if int(transformed_message['final']['year']) > 1920:
                 return True
-            else:
-                return False
-        else:
-            # Remove records which have not date.
+
+        # Remove records of special formats.
+        if transformed_message['final']['format'] in ['Objekt',
+                                                      'Diverse Tonformate',
+                                                      'Schallplatte',
+                                                      'Diverse Filmformate',
+                                                      'Datenbank']:
             return True
+
+        return False
 
 
 
