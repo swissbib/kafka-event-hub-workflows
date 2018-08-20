@@ -436,9 +436,7 @@ class TransformSruExport(DataTransformation):
 
             if field['F'] in ['A100', 'A125']:
                 self.marc.add_value('library', field['F'])
-                self.marc.append_value_sub('exemplar', 'call_number', field['j'])
-                if field['s'] is not None:
-                    self.marc.append_value_sub('exemplar', 'secondary_call_number', field['s'])
+                self.marc.append_value('call_number', field['j'])
 
         # TODO: Implement a way to process all the call numbers, since one title
         # can have many of them.
@@ -446,8 +444,8 @@ class TransformSruExport(DataTransformation):
         # books can have multiple call numbers for two reasons:
         # 1. The library owns more than one item.
         # 2. The bibliographic record describes multiple parts of one title.
-        if 'call_number' in self.marc.result['exemplar']:
-            call_number = self.marc.result['exemplar']['call_number'][0]
+        if 'call_number' in self.marc.result:
+            call_number = self.marc.result['call_number'][0]
             if ':' in call_number:
                 values = call_number.split(':')
                 if len(values) == 2:
