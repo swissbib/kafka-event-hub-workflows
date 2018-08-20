@@ -35,6 +35,12 @@ class MARCMapper(object):
             self.result[tag][sub_tag] = dict()
         self.result[tag][sub_tag][sub_sub_tag] = value
 
+    def append_value(self, tag, value):
+        if tag not in self.result:
+            self.result[tag] = [value]
+        else:
+            self.result[tag].append(value)
+
     def append_value_sub(self, tag, field, value):
         if tag not in self.result:
             self.result[tag] = dict()
