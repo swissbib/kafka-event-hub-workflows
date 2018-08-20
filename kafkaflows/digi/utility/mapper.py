@@ -69,7 +69,7 @@ class MARCMapper(object):
         _008 = self._record['008'].value()
         if re.match('\d+', _008[:6]):
             self.result['dates']['cat'] = dict()
-            self.result['dates']['cat']['year'] = '20' + _008[:2] if int(_008[:2]) != 99 else '19' + _008[:2]
+            self.result['dates']['cat']['year'] = '20' + _008[:2] if int(_008[:2]) > 30 else '19' + _008[:2]
             self.result['dates']['cat']['month'] = _008[2:4]
             self.result['dates']['cat']['day'] = _008[4:6]
             self.result['dates']['cat']['date'] = self.result['dates']['cat']['year'] + '-' + \
