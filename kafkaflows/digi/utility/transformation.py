@@ -238,21 +238,20 @@ class TransformSruExport(DataTransformation):
 
         Possible units are:
 
-        Laufmeter
-
         Seiten
 
-        Band
+        Laufmeter = 8'000 Seiten
+
+        Band = 245 Seiten
         Dossier
 
-        Gegenstand
+        Partitur = 50 Seiten
 
-        Digital (CD, DVD, Online-Resource)
+        Gegenstand
 
         Anderes
 
         None
-
         """
         coverage = self.marc.result['extent']['coverage']
         swisbib_format = self.marc.result['c-format']
@@ -277,7 +276,8 @@ class TransformSruExport(DataTransformation):
                 return pages, 'Seiten'
             else:
                 # TODO: Nachfragen ob Partituren eine eigene Seitenzahl erhalten sollten.
-                return 1, 'Band'
+                # 50 Seiten
+                return 1, 'Partitur'
 
         if swisbib_format in ['Partitur']:
             pages = 0
@@ -298,10 +298,11 @@ class TransformSruExport(DataTransformation):
                 if match:
                     band += int(match.group(1))
                 # TODO: Document Partitur
+                # average 50 pages
                 if band > 0:
-                    return band, 'Band'
+                    return band, 'Partitur'
                 else:
-                    return 1, 'Band'
+                    return 1, 'Partitur'
 
         # No useful coverage value.
         # ca. 140'000 records.
@@ -329,6 +330,7 @@ class TransformSruExport(DataTransformation):
         # Laufmeter
         match_lfm = re.fullmatch('([Cc]a\. )?(?P<number>[0-9]+,[0-9]+) (m|Lfm|Laufmeter|lfd.m)( \(.*\))?', coverage)
         if match_lfm:
+            # 1 Laufmeter = 8'000 Seiten
             return float(match_lfm.groupdict()['number'].replace(',', '.')), 'Laufmeter'
 
         # Postcards
@@ -342,6 +344,7 @@ class TransformSruExport(DataTransformation):
         match = re.search('(\d+) (\w+ )?((Ph|F)oto|Repro)', coverage)
         if match:
             return int(match.group(1)), 'Seiten'
+            # 80 Seiten Band
 
         # Find letters!
         letters = re.search('Brief[e]?', coverage)
@@ -374,6 +377,10 @@ class TransformSruExport(DataTransformation):
                         pages += int(l[3])
                 if pages > 0:
                     return pages, 'Seiten'
+                else:
+                    # Briefe pro Mappe (ca. 40 Seiten)
+                    # average assumptions.
+                    return 3, 'Seiten'
             # END LETTERS
 
         # part pages
@@ -382,6 +389,9 @@ class TransformSruExport(DataTransformation):
             pages = int(half_pages.group(1)) + 1
             if pages > 0:
                 return pages, 'Seiten'
+
+        # Schachteln = 800 Seiten
+        # Mappen = 80 Seiten
 
         return 0, 'None'
 
@@ -416,7 +426,9 @@ class TransformSruExport(DataTransformation):
 
         Only books from A100 & A125 are used.
 
-        No books from A140 or A130 are older than 1900 and part belong to UB.
+        Books older than 1920 are very rare in A140 (UB Medizin)
+        The books in A130 (Altertum) are ignored, because there are not that many, and it would
+        be necessary to further filter the books from UBH.
         """
         for field in self.marc.get_fields('949'):
 
@@ -429,7 +441,7 @@ class TransformSruExport(DataTransformation):
     def parse_format_codes(self):
         """Parse the format codes and replace them with human readable forms.
 
-        TODO: See which one of these we should use as final format value.
+        The c-format, the most condensed value is used as format.
         """
         self.marc.parse_field('898', 'a', 'a-format')
         if 'a-format' in self.marc.result:
@@ -440,6 +452,7 @@ class TransformSruExport(DataTransformation):
         self.marc.parse_field('898', 'c', 'c-format')
         if 'c-format' in self.marc.result:
             self.marc.result['c-format'] = format_dict[self.marc.result['c-format']]
+            self.marc.add_value_sub('final', 'format', self.marc.result['c-format'])
 
     def parse_additional_information(self):
         """Information which might be interesting in the future, but not needed for current analysis."""
