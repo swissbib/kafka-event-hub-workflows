@@ -449,9 +449,18 @@ class TransformSruExport(DataTransformation):
         if 'call_number' in self.marc.result['exemplar']:
             call_number = self.marc.result['exemplar']['call_number'][0]
             if ':' in call_number:
-                call_number_part, volume_number = call_number.split(':')
-                volume_number = volume_number.strip()
-                values = call_number_part.split(' ')
+                values = call_number.split(':')
+                if len(values) == 2:
+                    issue_number = None
+                    volume_number = values[1].strip()
+                    values = values.split(' ')[0]
+                elif len(values) == 3:
+                    issue_number = values[2].strip()
+                    volume_number = values[1].strip()
+                    values = values.split(' ')[0]
+                else:
+                    issue_number = None
+                    volume_number = None
             else:
                 volume_number = None
                 values = call_number.split(' ')
@@ -463,6 +472,8 @@ class TransformSruExport(DataTransformation):
 
             if volume_number:
                 self.marc.add_value_sub('filter', 'volume', volume_number)
+            if issue_number:
+                self.marc.add_value_sub('filter', 'issue', issue_number)
 
     def parse_format_codes(self):
         """Parse the format codes and replace them with human readable forms.
