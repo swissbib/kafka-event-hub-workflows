@@ -523,7 +523,7 @@ class TransformSruExport(DataTransformation):
             pages += 1
 
         if pages > 0:
-            return pages, name
+            return pages, 'Seiten'
 
         letters, name = parse_letters(coverage)
         if letters > 0:
