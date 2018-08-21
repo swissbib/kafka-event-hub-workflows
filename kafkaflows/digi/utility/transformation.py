@@ -5,7 +5,6 @@ from kafka_event_hub.consumers.utility import DataTransformation
 from simple_elastic import ElasticIndex
 from roman import fromRoman, InvalidRomanNumeralError
 
-from statistics import median
 import typing
 import logging
 import re
@@ -18,12 +17,184 @@ roman_numeral = re.compile('^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,
 
 empty = re.compile('\s+v\.')
 
-regex_pages = re.compile('[\[]?(\d+)[\]]? (S( |\.|,|\)|$)|Seiten|p|Bl(ätter)?|Bogen|P$)')
-regex_pages_part = re.compile('S\. (\d+)-(\d+)')
-regex_vol = re.compile('(No|Vol|Bd|Nr|H|Heft)[.]?[ ]?([0-9]+)(\.([0-9]+))?([ \.,]|$)')
-regex_series = re.compile('(No|H|Nr|Heft)[.]?[ ]?([0-9]+)-([0-9]+)')
-regex_series_open = re.compile('(No|H|Nr|Heft)[.]?[ ]?([0-9]+)-')
-regex_laufmeter = re.compile('(\d+,\d+) Lfm')
+regex_pages = re.compile('[\[]?(\d+)[\]]? '
+                         '('
+                         '[Ss]([^a-z]|$)|'
+                         '[Pp]([^a-z]|$)|'
+                         '[Ss]eite[n]?|'
+                         '[Pp]age[s]?|'
+                         'Bl([äa]tt(er)?)?|'
+                         'B[öo]gen|'
+                         'Doppelblatt|'
+                         '[Dd]o[kc]ument[es]?|'
+                         'Manuskript|'
+                         'fol|'
+                         'Zettel[n]?'
+                         ')')
+
+regex_pages_single = re.compile('(S|Bl)[.]? (\d+)')
+regex_pages_range = re.compile('(S|Bl|fol)[.]? (\d+)-(\d+)')
+regex_pages_partial = re.compile('(\d+)?([ ]?[¼½¾]|[.,]\d+| \d/\d) (Bl|S)\.')
+
+regex_volumes_word_number = re.compile('([Tt]([h]?eil[e]?)?|'
+                                       'B[äa]nd[e]?|'
+                                       'Bd[e]?|'
+                                       '[Vv]ol(ume)?[s]?|'
+                                       'H(eft)?(e|chen)?|'
+                                       '[Tt]om[ei]?[s]?|'
+                                       'N[or])[.]? [\[]?(\d+)[\]]?([^-]|$)')
+regex_volumes_number_word = re.compile('[\[]?(\d+)[\]]? ([Tt]([h]?eil[e]?)?|'
+                                       'B[äa]nd[e]?|'
+                                       'Bd[e]?|'
+                                       '[Vv]ol(ume)?[s]?|'
+                                       'H(eft)?(e|chen)?|'
+                                       '[Tt]om[ei]?[s]?|'
+                                       'N[or])([^a-z]|$)')
+regex_volumes_word_range = re.compile('([Tt]([h]?eil[e]?)?|'
+                                      'B[äa]nd[e]?|'
+                                      'Bd[e]?|'
+                                      '[Vv]ol(ume)?[s]?|'
+                                      'H(eft)?(e|chen)?|'
+                                      '[Tt]om[ei]?[s]?|'
+                                      'N[or])[.]? (\d+)-(\d+)')
+
+
+regex_letters = re.compile('(\d+) ((Antwort|Gegen)?[bB]rief[e]?|Couvert[s]?)')
+regex_boxes = re.compile('(\d+) (Archiv)?[Ss]chachtel(\(n\)|n)?( \((\d,\d+) m\))?')
+regex_folders = re.compile('(\d+) Mappe(\(n\)|n)?')
+regex_laufmeter = re.compile('(\d+(,\d+)?) (m|[Ll]fm|Laufmeter|lfd\.m)')
+
+regex_piece = re.compile('(\d+) Stück')
+regex_dossier = re.compile('(\d+) Dossier[s]?')
+regex_serie = re.compile('(\d+) Serie')
+
+
+def parse_archive(coverage, return_type):
+    archive = 0
+    results = regex_dossier.findall(coverage)
+    for result in results:
+        archive += int(result[0])
+
+    results = regex_piece.findall(coverage)
+    for result in results:
+        archive += int(result[0])
+
+    results = regex_serie.findall(coverage)
+    for result in results:
+        archive += int(result[0])
+
+    if archive > 0:
+        return archive, return_type
+    else:
+        return 0, 'None'
+
+
+def parse_meters(coverage):
+    lfm = 0
+    results = regex_laufmeter.findall(coverage)
+    for result in results:
+        lfm += float(result[0].replace(',', '.'))
+
+    if lfm > 0:
+        return lfm, 'Laufmeter'
+    else:
+        return 0, 'None'
+
+
+def parse_folders(coverage, return_type):
+    folders = 0
+    results = regex_folders.findall(coverage)
+    for result in results:
+        folders += int(result[0])
+
+    if folders > 0:
+        return folders, return_type
+    else:
+        return 0, 'None'
+
+
+def parse_boxes(coverage):
+    boxes = lfm = 0
+    results = regex_boxes.findall(coverage)
+    for result in results:
+        if result[3] == '':
+            boxes += int(result[0])
+        else:
+            lfm += float(result[4].replace(',', '.'))
+
+    if boxes > 0:
+        return boxes, 'Schachteln'
+    elif lfm > 0:
+        return lfm, 'Laufmeter'
+    else:
+        return 0, 'None'
+
+
+def parse_letters(coverage):
+    letters = 0
+    results = regex_letters.findall(coverage)
+    for result in results:
+        letters += int(result[0])
+
+    if letters > 0:
+        return letters, 'Briefe'
+    else:
+        return 0, 'None'
+
+
+def parse_volumes(coverage, return_type):
+    volumes = 0
+    results = regex_volumes_word_number.findall(coverage)
+    if len(results) > 0:
+        volumes += 1
+
+    results = regex_volumes_number_word.findall(coverage)
+    for result in results:
+        volumes += int(result[0])
+
+    results = regex_volumes_word_range.findall(coverage)
+    for result in results:
+        volumes += int(result[6]) - int(result[5]) + 1
+
+    if volumes > 0:
+        return volumes, return_type
+    else:
+        return 0, 'None'
+
+
+def parse_pages(coverage):
+    pages = 0
+    results = regex_pages.findall(coverage)
+    for result in results:
+        pages += int(result[0])
+
+    results = regex_pages_single.findall(coverage)
+    for result in results:
+        pages += int(result[1])
+
+    results = regex_pages_range.findall(coverage)
+    for result in results:
+        pages += int(result[2]) - int(result[1]) + 1
+
+    results = regex_pages_partial.findall(coverage)
+    for result in results:
+        if result[0] == '':
+            pages = 1
+        else:
+            pages += int(result[0]) + 1
+
+    if pages > 0:
+        result = find_roman_numeral.search(coverage)
+        if result:
+            roman_number = roman_numeral.fullmatch(result.group(1))
+            if roman_number:
+                pages += fromRoman(roman_number.group(0))
+
+    if pages > 0:
+        return pages, 'Seiten'
+    else:
+        return 0, 'None'
+
 
 class TransformSruExport(DataTransformation):
 
@@ -36,9 +207,10 @@ class TransformSruExport(DataTransformation):
         self.swissbib_elk_host = config['swissbib.host']
         self.opac = ElasticIndex(**config['opac'])
         self.reservations = ElasticIndex(**config['reservations'])
-        self.page_converstions = config['page-conversions']
+        self.page_conversion_rates = config['page-conversions']
 
     def transform(self, value: str) -> dict:
+        # Do not reoder this function!
         self.marc = MARCMapper(value)
         self.marc.add_value('database', self._database)
         self.marc.identifier()
@@ -233,7 +405,7 @@ class TransformSruExport(DataTransformation):
                 if self.marc.result['c-format'] in ['Schallplatte', 'Diverse Filmformate', 'Diverse Tonformate']:
                     num = 1
                     name = 'Gegenstand'
-                if self.marc.result['c-format'] in ['Datenbank', 'Zeitung']:
+                if self.marc.result['c-format'] in ['Zeitung', 'Zeitschrift / Schriftenreihe']:
                     num = 0
                     name = 'Periodikum'
 
@@ -243,10 +415,13 @@ class TransformSruExport(DataTransformation):
 
             if name == 'Seiten':
                 pages = num
+            else:
+                pages = num * self.page_conversion_rates[name]
 
         if pages == 0:
+            # This should not happen!
             self.marc.add_error_tag('_no_page_value')
-            # TODO: Add estimates!
+            self.marc.add_value_sub('final', 'pages', 1)
         else:
             self.marc.add_value_sub('final', 'pages', pages)
 
@@ -254,165 +429,211 @@ class TransformSruExport(DataTransformation):
         """Parses various values from the coverage field and returns them as tuple:
 
         (number of unit, name of unit)
-
-        Possible units are:
-
-        Seiten
-
-        Laufmeter = 8'000 Seiten
-
-        Band = 245 Seiten
-        Dossier
-
-        Partitur = 50 Seiten
-
-        Gegenstand
-
-        Anderes
-
-        None
         """
         coverage = self.marc.result['extent']['coverage']
-        swisbib_format = self.marc.result['c-format']
+        swissbib_format = self.marc.result['c-format']
 
-        if swisbib_format == 'Atlas':
-            pages = 0
-            match = re.findall('(\d+) (Taf|Kt|S(eiten)?|(Titel)?[Bb]l(ätter(n)?)?|Kart(e(n)?)?)', coverage)
-            if len(match) > 0:
-                for l in match:
-                    pages += int(l[0])
+        if swissbib_format in ['Klavierauszug', 'Partitur', 'Noten']:
+            return self.parse_partituren(coverage)
+        elif swissbib_format in ['Atlas', 'Karte', 'Diverse Kartenformate']:
+            return self.parse_maps(coverage)
+        elif swissbib_format in ['Brief', 'Briefsammlung']:
+            return self.parse_letters(coverage)
+        elif swissbib_format in ['Diverse Bildformate', 'Fotografie']:
+            return self.parse_fotos(coverage)
+        elif swissbib_format in ['Gesamtwerk', 'Buch', 'Verfassung / Gesetz', 'Artikel']:
+            return self.parse_books(coverage, swissbib_format)
+        elif swissbib_format in ['Handschrift']:
+            return self.parse_manuscript(coverage)
 
-            if pages > 0:
-                return pages, 'Seiten'
+    def parse_partituren(self, coverage):
+        if empty.search(coverage):
+            return 1, 'Partitur'
 
-        elif swisbib_format in ['Klavierauszug', 'Partitur', 'Noten']:
-            if empty.search(coverage):
-                return 3, 'Partitur'
-            pages = 0
-            match = regex_pages.search(coverage)
-            if match:
-                pages += int(match.group(1))
+        num, name = parse_pages(coverage)
+        if name == 'Seiten':
+            return num, name
 
-            match = find_roman_numeral.search(coverage)
-            if match:
-                roman_number = roman_numeral.fullmatch(match.group(1))
-                if roman_number:
-                    pages += fromRoman(roman_number.group(0))
+        num, name = parse_volumes(coverage, 'Partitur')
+        results = re.findall('(\d+) (Abt|B|C|H$|He|K|[Pp]art|Ser|St|T|[Vv]ol)', coverage)
+        for result in results:
+            num += int(result[0])
 
-            match = regex_pages_part.search(coverage)
-            if match:
-                # Bsp: S. 24-35
-                pages = int(match.group(2)) - int(match.group(1)) + 1
+        if num > 0:
+            return num, name
 
-            if pages > 0:
-                return pages, 'Seiten'
-            else:
-                match = re.search('(\d+) (Abt|B|C|H$|He|K|[Pp]art|Ser|St|T|[Vv]ol)', coverage)
-                volume = regex_vol.findall(coverage)
-                series = regex_series.findall(coverage)
-                lfm = regex_laufmeter.fullmatch(coverage)
-                if match:
-                    return int(match.group(1)), 'Partitur'
-                elif len(volume) > 0:
-                    return 1, 'Partitur'
-                elif lfm:
-                    lfm = float(lfm.group(1).replace(',', '.')) * 8000
-                    return lfm, 'Seiten'
-                elif len(series) > 0:
-                    return series[0][2] - series[0][1] + 1, 'Partitur'
-                else:
-                    return 3, 'Partitur'
+        num, name = parse_meters(coverage)
+        if num > 0:
+            return num, name
 
-        # No useful coverage value.
-        # ca. 140'000 records.
-        if re.match('\s+v\.$', coverage):
-            return 0, 'None'
+        return 1, 'Partitur'
 
-        # Simple number of pages:
-        match_pages = re.fullmatch('(\[)?(?P<number>[0-9]+)(\])? ([Ss](eiten|.)?|p(ages)?)', coverage)
-        if match_pages:
-            return int(match_pages.groupdict()['number']), 'Seiten'
+    def parse_maps(self, coverage):
+        if empty.fullmatch(coverage):
+            return 4, 'Karten'
 
-        # Number of pages with roman numeral:
-        # will ignore roman numerals which are not valid.
-        match_pages_roman = re.fullmatch('(?P<roman>[CVXILMcvixlm]+)[,.] (?P<number>[0-9]+) ([Ss](eiten|.)?|p(ages)?)$', coverage)
-        if match_pages_roman:
-            result = match_pages_roman.groupdict()
-            try:
-                roman = fromRoman(result['roman'])
-            except InvalidRomanNumeralError:
-                pages = int(result['number'])
-            else:
-                pages = roman + int(result['number'])
+        num, name = parse_pages(coverage)
+        if name == 'Seiten':
+            return num, name
+
+        maps_matches = re.findall('(\d+) ([Kc]arte[n]?|Pl[äa]n[e]?|Vogel|Ansicht|Panorama|Manuskript)', coverage)
+        maps = 0
+        for matches in maps_matches:
+            maps += int(matches[0])
+        if maps > 0:
+            return maps, 'Karten'
+
+        atlas_matches = re.findall('(\d+) (Atlas)', coverage)
+
+        atlas = 0
+        for match in atlas_matches:
+            atlas += int(match[0])
+        if atlas > 0:
+            return atlas, 'Band'
+        folders, name = parse_folders(coverage, 'Kartenmappen')
+        if folders > 0:
+            return folders, name
+
+        return 4, 'Karten'
+
+    def parse_letters(self, coverage):
+        if empty.fullmatch(coverage):
+            return 2, 'Briefe'
+
+        pages, name = parse_pages(coverage)
+
+        results = re.findall('(\d+) (Karte|Briefkarte|Postkarte|Ansichtskarte|Visitenkarte)', coverage)
+        for result in results:
+            pages += int(result[0])
+
+        result = re.match('Briefkarte|Postkarte|Zettel|Karte|Visitenkarte', coverage)
+        if result:
+            pages += 1
+
+        if pages > 0:
+            return pages, name
+
+        letters, name = parse_letters(coverage)
+
+        if letters > 0:
+            return letters, name
+
+        volumes, name = parse_volumes(coverage, 'Briefband')
+        if volumes > 0:
+            return volumes, name
+
+        folders, name = parse_folders(coverage, 'Briefmappe')
+        if folders > 0:
+            return folders, name
+
+        return 2, 'Briefe'
+
+    def parse_fotos(self, coverage):
+        if empty.fullmatch(coverage):
+            return 1, 'Seiten'
+
+        pages, name = parse_pages(coverage)
+
+        results = re.findall('(\d+) (Kupferstich|Litho|Foto|Zeichnung|Repro|Holzschnitt|Schattenriss'
+                             '|Aquarell|Druckgrafik(en)?|Physionotrace|Bild|Stück|Radierung)', coverage)
+        for result in results:
+            pages += int(result[0])
+
+        if pages > 0:
             return pages, 'Seiten'
 
-        # Laufmeter
-        match_lfm = re.fullmatch('([Cc]a\. )?(?P<number>[0-9]+,[0-9]+) (m|Lfm|Laufmeter|lfd.m)( \(.*\))?', coverage)
-        if match_lfm:
-            # 1 Laufmeter = 8'000 Seiten
-            return float(match_lfm.groupdict()['number'].replace(',', '.')), 'Laufmeter'
+        folders, name = parse_folders(coverage, 'Fotomappe')
+        if folders > 0:
+            return folders, name
 
-        # Postcards
-        # X Bl. ; A4/A5/X cm
-        match_postcard = re.fullmatch('(?P<number>[0-9]+) Bl\. ; '
-                                      '((?P<format>[ ]?[456])|(?P<size>[0-9]+)[ ]?cm)', coverage)
-        if match_postcard:
-            return int(match_postcard.groupdict()['number']), 'Seiten'
+        return 1, 'Seiten'
 
-        # Fotos
-        match = re.search('(\d+) (\w+ )?((Ph|F)oto|Repro)', coverage)
-        if match:
-            return int(match.group(1)), 'Seiten'
-            # 80 Seiten Band
+    def parse_books(self, coverage, swissbib_format):
+        if swissbib_format == 'Artikel':
+            return_type = 'Artikel'
+        else:
+            return_type = 'Band'
+        if empty.fullmatch(coverage):
+            return 1, return_type
 
-        # Find letters!
-        letters = re.search('Brief[e]?', coverage)
+        num, name = parse_pages(coverage)
+        if num > 0:
+            return num, name
 
-        if letters:
-            # Select pages or letters. Both are counted as a page each.
-            # Fairly accurate as long as the source is right...
-            letter_numbers = re.findall('([0-9]+) (\w+)[ ]?(\(([0-9]+) (\w+)\))?', coverage)
+        volumes, name = parse_volumes(coverage, return_type)
+        if volumes > 0:
+            return volumes, name
 
-            if len(letter_numbers) > 0:
-                pages = 0
-                for l in letter_numbers:
-                    if l[4] == '' and l[1] in ['Briefe', 'Brief', 'Briefen',
-                                               'Antwortbriefe', 'Antwortbrief', 'Einzelbriefe', 'Briefwechsel',
-                                               'Gegenbriefe', 'Gegenbrief',
-                                               'Karte', 'Karten', 'Zeitungsausschnitt',
-                                               'Postkarte', 'Postkarten',
-                                               'Telegramme', 'Telegramm', 'Kurznachricht',
-                                               'Ansichtskarten', 'Ansichtskarte', 'Blatt',
-                                               'Kärtchen', 'Briefkarte', 'Aerogarmm', 'Manuskripte', 'Gefalteter',
-                                               'Doppelkarten', 'Dokumente', 'Grundrisse', 'Zettel',
-                                               'Neujahreskarten', 'weiterer', 'numerierte', 'Zeitungsauschnitt',
-                                               'Zeugnis', 'Neujahrskarten', 'Stück', 'Briefkarten',
-                                               'Bl', 'S', 'Fotonegative', 'Fotopositive', 'Artikeln'
-                                               ]:
-                        pages += int(l[0])
-                    elif l[1] in ['Couvert', 'Schachtel', 'Band'] and l[4] in ['Briefe']:
-                        pages += int(l[3]) * 3
-                    elif l[4] in ['Blatt', 'Bl']:
-                        pages += int(l[3])
-                if pages > 0:
-                    return pages, 'Seiten'
-                else:
-                    # Briefe pro Mappe (ca. 40 Seiten)
-                    # average assumptions.
-                    return 3, 'Seiten'
-            # END LETTERS
+        return 1, return_type
 
-        # part pages
-        half_pages = re.fullmatch('([0-9]+)([½¾]|[.,][0-9]+| [0-9]/[0-9]) (Bl|S)\.', coverage)
-        if half_pages:
-            pages = int(half_pages.group(1)) + 1
-            if pages > 0:
-                return pages, 'Seiten'
+    def parse_manuscript(self, coverage):
+        if empty.fullmatch(coverage):
+            return 1, 'Manuskriptband'
 
-        # Schachteln = 800 Seiten
-        # Mappen = 80 Seiten
+        num, name = parse_pages(coverage)
+        if num > 0:
+            return num, name
 
-        return 0, 'None'
+        volumes, name = parse_volumes(coverage, 'Manuskriptband')
+        results = re.findall('(\d+) (Stücke|Papiertüte[n]?|Faszikel|Dossier|Broschüre|Zeichenbuch|'
+                             'Heft(e|chen)?|Schuber|Bündel|Konvolut|Schulheft|Umschläge|Büchlein|Umschlag|Predigten)',
+                             coverage)
+        for result in results:
+            volumes += int(result[0])
+
+        if volumes > 0:
+            return volumes, 'Manuskriptband'
+
+        folders, name = parse_folders(coverage, 'Manuskriptmappen')
+
+        if folders > 0:
+            return folders, name
+
+        num, name = parse_boxes(coverage)
+
+        if num > 0:
+            return num, name
+
+        letters, name = parse_letters(coverage)
+
+        if letters > 0:
+            return letters, name
+
+        return 1, 'Manuskriptband'
+
+    def parse_dossier(self, coverage):
+        if empty.fullmatch(coverage):
+            return 1, 'Archiveinheit'
+
+        pages, name = parse_pages(coverage)
+        if pages > 0:
+            return pages, name
+
+        volumes, name = parse_volumes(coverage, 'Band')
+        if volumes > 0:
+            return volumes, name
+
+        boxes, name = parse_boxes(coverage)
+        if boxes > 0:
+            return boxes, name
+
+        folders, name = parse_folders(coverage, 'Mappen')
+        if folders > 0:
+            return folders, name
+
+        lfm, name = parse_meters(coverage)
+        if lfm > 0:
+            return lfm, name
+
+        letters, name = parse_letters(coverage)
+        if letters > 0:
+            return letters, name
+
+        archives, name = parse_archive(coverage, 'Archiveinheit')
+        if archives > 0:
+            return archives, name
+
+        return 1, 'Archiveinheit'
 
     def parse_record_type(self):
         """Defines a general type for the record.
@@ -573,6 +794,8 @@ class TransformSruExport(DataTransformation):
             return True
 
         return False
+
+
 
 
 

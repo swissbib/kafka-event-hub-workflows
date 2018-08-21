@@ -40,10 +40,27 @@ DataTransformation:
       mapping: null
     swissbib.host: http://sb-uesl1.swissbib.unibas.ch:8080
     page-conversions:
+      Band: 245
+      Artikel: 100
       Partitur: 50
-      Brief: 3
-      Buch: 245
+
+      Karten: 4
+      Kartenmappen: 40
+
       Laufmeter: 8000
-      Schachtel: 800
-      Mappe: 80
-      Briefmappe: 40
+
+      Schachteln: 800
+      Mappen: 80
+
+      Briefe: 3
+      Briefband: 80
+      Briefmappen: 80
+
+      # Formattpy Fotos, Bilder: Mappen
+      Fotomappen: 80
+
+      # Formattyp Dossier: Dossier[s], Stück, Serie
+      Archiveinheit: 80
+
+
+
