@@ -39,3 +39,11 @@ DataTransformation:
       timeout: 300
       mapping: null
     swissbib.host: http://sb-uesl1.swissbib.unibas.ch:8080
+    page-conversions:
+      Partitur: 50
+      Brief: 3
+      Buch: 245
+      Laufmeter: 8000
+      Schachtel: 800
+      Mappe: 80
+      Briefmappe: 40
