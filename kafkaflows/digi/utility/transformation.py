@@ -449,6 +449,11 @@ class TransformSruExport(DataTransformation):
             return self.parse_books(coverage, swissbib_format)
         elif swissbib_format in ['Handschrift']:
             return self.parse_manuscript(coverage)
+        else:
+            logging.error('Could not parse %s, with coverage %s and format %s.', self.marc.result['identifier'],
+                          coverage, swissbib_format
+                          )
+            return 1, 'Seiten'
 
     def parse_partituren(self, coverage):
         if coverage is None or empty.fullmatch(coverage):
