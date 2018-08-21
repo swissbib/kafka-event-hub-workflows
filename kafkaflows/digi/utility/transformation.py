@@ -414,7 +414,7 @@ class TransformSruExport(DataTransformation):
                 num, name = self.parse_coverage_field()
 
                 if name == 'None':
-                    raise ValueError('Name should not be None here: {}. {}'.format(self.marc.result['identifer'], num))
+                    raise ValueError('Name should not be None here: {}. {}'.format(self.marc.result['identifier'], num))
 
                 if name != 'Seiten':
                     num = num * self.page_conversion_rates[name]
