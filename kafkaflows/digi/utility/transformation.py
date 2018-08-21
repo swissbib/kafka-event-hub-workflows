@@ -401,23 +401,26 @@ class TransformSruExport(DataTransformation):
             self.marc.parse_field_to_subfield('300', 'a', 'extent', 'coverage')
             num = 0
             name = 'None'
-            if 'c-format' in self.marc.result:
-                if self.marc.result['c-format'] in ['Schallplatte', 'Diverse Filmformate', 'Diverse Tonformate']:
-                    num = 1
-                    name = 'Gegenstand'
-                if self.marc.result['c-format'] in ['Zeitung', 'Zeitschrift / Schriftenreihe']:
-                    # TODO: Bessere implementierung von Zeitschriften.
-                    num = 1
-                    name = 'Periodikum'
-                pages = num
+
+            if self.marc.result['c-format'] in ['Schallplatte', 'Diverse Filmformate', 'Diverse Tonformate']:
+                num = 1
+                name = 'Gegenstand'
+            if self.marc.result['c-format'] in ['Zeitung', 'Zeitschrift / Schriftenreihe']:
+                # TODO: Bessere implementierung von Zeitschriften.
+                num = 1
+                name = 'Periodikum'
 
             if name == 'None':
                 num, name = self.parse_coverage_field()
 
-                if name == 'Seiten':
-                    pages = num
-                else:
-                    pages = num * self.page_conversion_rates[name]
+                if name == 'None':
+                    raise ValueError('Name should not be None here: {}. {}'.format(self.marc.result['identifer'], num))
+
+                if name != 'Seiten':
+                    num = num * self.page_conversion_rates[name]
+
+
+            pages = num
 
         if pages == 0:
             # This should not happen!
@@ -460,7 +463,7 @@ class TransformSruExport(DataTransformation):
             return 1, 'Partitur'
 
         num, name = parse_pages(coverage)
-        if name == 'Seiten':
+        if num > 0:
             return num, name
 
         num, name = parse_volumes(coverage, 'Partitur')
@@ -523,7 +526,6 @@ class TransformSruExport(DataTransformation):
             return pages, name
 
         letters, name = parse_letters(coverage)
-
         if letters > 0:
             return letters, name
 
