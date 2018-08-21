@@ -418,8 +418,6 @@ class TransformSruExport(DataTransformation):
 
                 if name != 'Seiten':
                     num = num * self.page_conversion_rates[name]
-
-
             pages = num
 
         if pages == 0:
@@ -452,6 +450,8 @@ class TransformSruExport(DataTransformation):
             return self.parse_books(coverage, swissbib_format)
         elif swissbib_format in ['Handschrift']:
             return self.parse_manuscript(coverage)
+        elif swissbib_format in ['Dossier']:
+            return self.parse_dossier(coverage)
         else:
             logging.error('Could not parse %s, with coverage %s and format %s.', self.marc.result['identifier'],
                           coverage, swissbib_format
