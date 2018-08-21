@@ -406,17 +406,18 @@ class TransformSruExport(DataTransformation):
                     num = 1
                     name = 'Gegenstand'
                 if self.marc.result['c-format'] in ['Zeitung', 'Zeitschrift / Schriftenreihe']:
-                    num = 0
+                    # TODO: Bessere implementierung von Zeitschriften.
+                    num = 1
                     name = 'Periodikum'
+                pages = num
 
             if name == 'None':
-                if 'coverage' in self.marc.result['extent']:
-                    num, name = self.parse_coverage_field()
+                num, name = self.parse_coverage_field()
 
-            if name == 'Seiten':
-                pages = num
-            else:
-                pages = num * self.page_conversion_rates[name]
+                if name == 'Seiten':
+                    pages = num
+                else:
+                    pages = num * self.page_conversion_rates[name]
 
         if pages == 0:
             # This should not happen!
@@ -430,7 +431,10 @@ class TransformSruExport(DataTransformation):
 
         (number of unit, name of unit)
         """
-        coverage = self.marc.result['extent']['coverage']
+        if 'coverage' in self.marc.result['extent']:
+            coverage = self.marc.result['extent']['coverage']
+        else:
+            coverage = None
         swissbib_format = self.marc.result['c-format']
 
         if swissbib_format in ['Klavierauszug', 'Partitur', 'Noten']:
@@ -447,7 +451,7 @@ class TransformSruExport(DataTransformation):
             return self.parse_manuscript(coverage)
 
     def parse_partituren(self, coverage):
-        if empty.search(coverage):
+        if coverage is None or empty.fullmatch(coverage):
             return 1, 'Partitur'
 
         num, name = parse_pages(coverage)
@@ -469,7 +473,7 @@ class TransformSruExport(DataTransformation):
         return 1, 'Partitur'
 
     def parse_maps(self, coverage):
-        if empty.fullmatch(coverage):
+        if coverage is None or empty.fullmatch(coverage):
             return 4, 'Karten'
 
         num, name = parse_pages(coverage)
@@ -497,7 +501,7 @@ class TransformSruExport(DataTransformation):
         return 4, 'Karten'
 
     def parse_letters(self, coverage):
-        if empty.fullmatch(coverage):
+        if coverage is None or empty.fullmatch(coverage):
             return 2, 'Briefe'
 
         pages, name = parse_pages(coverage)
@@ -529,7 +533,7 @@ class TransformSruExport(DataTransformation):
         return 2, 'Briefe'
 
     def parse_fotos(self, coverage):
-        if empty.fullmatch(coverage):
+        if coverage is None or empty.fullmatch(coverage):
             return 1, 'Seiten'
 
         pages, name = parse_pages(coverage)
@@ -553,7 +557,8 @@ class TransformSruExport(DataTransformation):
             return_type = 'Artikel'
         else:
             return_type = 'Band'
-        if empty.fullmatch(coverage):
+
+        if coverage is None or empty.fullmatch(coverage):
             return 1, return_type
 
         num, name = parse_pages(coverage)
@@ -567,7 +572,7 @@ class TransformSruExport(DataTransformation):
         return 1, return_type
 
     def parse_manuscript(self, coverage):
-        if empty.fullmatch(coverage):
+        if coverage is None or empty.fullmatch(coverage):
             return 1, 'Manuskriptband'
 
         num, name = parse_pages(coverage)
@@ -602,7 +607,7 @@ class TransformSruExport(DataTransformation):
         return 1, 'Manuskriptband'
 
     def parse_dossier(self, coverage):
-        if empty.fullmatch(coverage):
+        if coverage is None or empty.fullmatch(coverage):
             return 1, 'Archiveinheit'
 
         pages, name = parse_pages(coverage)
