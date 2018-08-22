@@ -743,21 +743,21 @@ class TransformSruExport(DataTransformation):
         # 1. The library owns more than one item.
         # 2. The bibliographic record describes multiple parts of one title.
         if 'call_number' in self.marc.result:
-            call_number = self.marc.result['call_number'][0]
+            call_number = self.marc.result['call_number'][0].strip()
             if ':' in call_number:
                 values = call_number.split(':')
                 if len(values) == 2:
                     issue_number = None
                     volume_number = values[1].strip()
-                    values = values[0].split(' ')
+                    values = values[0].strip().split(' ')
                 elif len(values) == 3:
                     issue_number = values[2].strip()
                     volume_number = values[1].strip()
-                    values = values[0].split(' ')
+                    values = values[0].strip().split(' ')
                 else:
                     issue_number = None
                     volume_number = None
-                    values = values[0].split(' ')
+                    values = values[0].strip().split(' ')
                     self.marc.add_error_tag('_invalid_call_number')
             else:
                 issue_number = None
