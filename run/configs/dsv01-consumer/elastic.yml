@@ -4,7 +4,7 @@ AdminClient:
     # debug: all
 Consumer:
   bootstrap.servers: sb-uka1.swissbib.unibas.ch:9092,sb-uka2.swissbib.unibas.ch:9092
-  group.id: dsv01-v5
+  group.id: dsv01-v6
   default.topic.config:
     auto.offset.reset: earliest
   # debug: all
@@ -12,7 +12,7 @@ Topic:
   topics:
     - sru_jsonmarc_dsv01
 Elastic:
-  index: kafka-dsv01
+  index: kafka-dsv01-v2
   doc_type: record
   url: http://sb-ues2.swissbib.unibas.ch:9200
   timeout: 300
