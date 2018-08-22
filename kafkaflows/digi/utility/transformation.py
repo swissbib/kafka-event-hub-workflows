@@ -437,7 +437,7 @@ class TransformSruExport(DataTransformation):
             num = 0
             name = Units.No
 
-            if self.marc.result['c-format'] in ['Schallplatte', 'Diverse Filmformate', 'Diverse Tonformate']:
+            if self.marc.result['c-format'] in ['Objekt', 'Diverse Tonformate', 'Schallplatte', 'Diverse Filmformate', 'Datenbank']:
                 num = 1
                 name = Units.Gegenstand
             if self.marc.result['c-format'] in ['Zeitung', 'Zeitschrift / Schriftenreihe']:
