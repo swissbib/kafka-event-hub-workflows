@@ -8,6 +8,45 @@ from roman import fromRoman, InvalidRomanNumeralError
 import typing
 import logging
 import re
+from enum import Enum
+
+
+class Units(Enum):
+    No = 'None'
+    Seiten = 'Seiten'
+
+    Band = 'Band'
+    Artikel = 'Artikel'
+
+    # Musik
+    Partitur = 'Partitur'
+    Stimmen = 'Stimmen'
+
+    # Handschriften
+    Manuskriptband = 'Manuskriptband'
+    Faszikel = 'Faszikel'
+
+    # Karten
+    Karten = 'Karten'
+    Kartenmappen = 'Kartenmappen'
+
+    # Archiv
+    Laufmeter = 'Laufmeter'
+    # Formattyp Dossier: Dossier[s], Stück, Serie
+    Archiveinheit = 'Archiveinheit'
+    Schachteln = 'Schachteln'
+    Mappen = 'Mappen'
+
+    # Briefe
+    Briefe = 'Briefe'
+    Briefband = 'Briefband'
+    Briefmappen = 'Briefmappen'
+
+    # Bilder
+    Fotomappen = 'Fotomappen'
+
+    Periodikum = 'Periodikum'
+    Gegenstand = 'Gegenstand'
 
 
 format_dict = swissbib_format_codes()
@@ -69,7 +108,7 @@ regex_dossier = re.compile('(\d+) Dossier[s]?')
 regex_serie = re.compile('(\d+) Serie')
 
 
-def parse_archive(coverage, return_type):
+def parse_archive(coverage: str, return_type: Units) -> typing.Tuple[float, Units]:
     archive = 0
     results = regex_dossier.findall(coverage)
     for result in results:
@@ -86,22 +125,22 @@ def parse_archive(coverage, return_type):
     if archive > 0:
         return archive, return_type
     else:
-        return 0, 'None'
+        return 0, Units.No
 
 
-def parse_meters(coverage):
+def parse_meters(coverage: str) -> typing.Tuple[float, Units]:
     lfm = 0
     results = regex_laufmeter.findall(coverage)
     for result in results:
         lfm += float(result[0].replace(',', '.'))
 
     if lfm > 0:
-        return lfm, 'Laufmeter'
+        return lfm, Units.Laufmeter
     else:
-        return 0, 'None'
+        return 0, Units.No
 
 
-def parse_folders(coverage, return_type):
+def parse_folders(coverage: str, return_type: Units) -> typing.Tuple[float, Units]:
     folders = 0
     results = regex_folders.findall(coverage)
     for result in results:
@@ -110,10 +149,10 @@ def parse_folders(coverage, return_type):
     if folders > 0:
         return folders, return_type
     else:
-        return 0, 'None'
+        return 0, Units.No
 
 
-def parse_boxes(coverage):
+def parse_boxes(coverage: str) -> typing.Tuple[float, Units]:
     boxes = lfm = 0
     results = regex_boxes.findall(coverage)
     for result in results:
@@ -123,26 +162,26 @@ def parse_boxes(coverage):
             lfm += float(result[4].replace(',', '.'))
 
     if boxes > 0:
-        return boxes, 'Schachteln'
+        return boxes, Units.Schachteln
     elif lfm > 0:
-        return lfm, 'Laufmeter'
+        return lfm, Units.Laufmeter
     else:
-        return 0, 'None'
+        return 0, Units.No
 
 
-def parse_letters(coverage):
+def parse_letters(coverage: str) -> typing.Tuple[float, Units]:
     letters = 0
     results = regex_letters.findall(coverage)
     for result in results:
         letters += int(result[0])
 
     if letters > 0:
-        return letters, 'Briefe'
+        return letters, Units.Briefe
     else:
-        return 0, 'None'
+        return 0, Units.No
 
 
-def parse_volumes(coverage, return_type):
+def parse_volumes(coverage: str, return_type: Units) -> typing.Tuple[float, Units]:
     volumes = 0
     results = regex_volumes_word_number.findall(coverage)
     if len(results) > 0:
@@ -159,10 +198,10 @@ def parse_volumes(coverage, return_type):
     if volumes > 0:
         return volumes, return_type
     else:
-        return 0, 'None'
+        return 0, Units.No
 
 
-def parse_pages(coverage):
+def parse_pages(coverage: str) -> typing.Tuple[float, Units]:
     pages = 0
     results = regex_pages.findall(coverage)
     for result in results:
@@ -191,9 +230,9 @@ def parse_pages(coverage):
                 pages += fromRoman(roman_number.group(0))
 
     if pages > 0:
-        return pages, 'Seiten'
+        return pages, Units.Seiten
     else:
-        return 0, 'None'
+        return 0, Units.No
 
 
 class TransformSruExport(DataTransformation):
@@ -390,34 +429,30 @@ class TransformSruExport(DataTransformation):
         First source: digidata number of images.
         Second source: coverage
         Third source: estimates.
-
-        TODO: Improve this a lot!
         """
-        pages = 0
-
         if 'number_of_pages' in self.marc.result:
             pages = self.marc.result['number_of_pages']
         else:
             self.marc.parse_field_to_subfield('300', 'a', 'extent', 'coverage')
             num = 0
-            name = 'None'
+            name = Units.No
 
             if self.marc.result['c-format'] in ['Schallplatte', 'Diverse Filmformate', 'Diverse Tonformate']:
                 num = 1
-                name = 'Gegenstand'
+                name = Units.Gegenstand
             if self.marc.result['c-format'] in ['Zeitung', 'Zeitschrift / Schriftenreihe']:
                 # TODO: Bessere implementierung von Zeitschriften.
                 num = 1
-                name = 'Periodikum'
+                name = Units.Periodikum
 
-            if name == 'None':
+            if name == Units.No:
                 num, name = self.parse_coverage_field()
 
-                if name == 'None':
+                if name == Units.No:
                     raise ValueError('Name should not be None here: {}. {}'.format(self.marc.result['identifier'], num))
 
-                if name != 'Seiten':
-                    num = num * self.page_conversion_rates[name]
+                if name != Units.Seiten:
+                    num = num * self.page_conversion_rates[name.value]
             pages = num
 
         if pages == 0:
@@ -427,7 +462,7 @@ class TransformSruExport(DataTransformation):
         else:
             self.marc.add_value_sub('final', 'pages', pages)
 
-    def parse_coverage_field(self) -> typing.Tuple[float, str]:
+    def parse_coverage_field(self) -> typing.Tuple[float, Units]:
         """Parses various values from the coverage field and returns them as tuple:
 
         (number of unit, name of unit)
@@ -456,33 +491,46 @@ class TransformSruExport(DataTransformation):
             logging.error('Could not parse %s, with coverage %s and format %s.', self.marc.result['identifier'],
                           coverage, swissbib_format
                           )
-            return 1, 'Seiten'
+            return 1.0, Units.Seiten
 
-    def parse_partituren(self, coverage):
+    def parse_partituren(self, coverage: str) -> typing.Tuple[float, Units]:
         if coverage is None or empty.fullmatch(coverage):
-            return 1, 'Partitur'
+            return 1.0, Units.Partitur
 
         num, name = parse_pages(coverage)
         if num > 0:
             return num, name
 
-        num, name = parse_volumes(coverage, 'Partitur')
-        results = re.findall('(\d+) (Abt|B|C|H$|He|K|[Pp]art|Ser|St|T|[Vv]ol)', coverage)
+        stimmen = re.match('Stimme', coverage)
+        if stimmen:
+            return 1.0, Units.Stimmen
+
+        stimmen = re.match('Stimmen', coverage)
+        if stimmen:
+            return 3.0, Units.Stimmen
+
+        num, name = parse_volumes(coverage, Units.Partitur)
+
+        results = re.findall('(\d+) Stimme[n]', coverage)
+        for result in results:
+            num += int(result[0]) / 2
+
+        results = re.findall('(\d+) (Abt|B|C|H$|He|K|[Pp]art|Ser|T|[Vv]ol)', coverage)
         for result in results:
             num += int(result[0])
 
         if num > 0:
-            return num, name
+            return num, Units.Partitur
 
         num, name = parse_meters(coverage)
         if num > 0:
             return num, name
 
-        return 1, 'Partitur'
+        return 1, Units.Partitur
 
-    def parse_maps(self, coverage):
+    def parse_maps(self, coverage: str) -> typing.Tuple[float, Units]:
         if coverage is None or empty.fullmatch(coverage):
-            return 4, 'Karten'
+            return 4, Units.Karten
 
         num, name = parse_pages(coverage)
         if name == 'Seiten':
@@ -493,7 +541,7 @@ class TransformSruExport(DataTransformation):
         for matches in maps_matches:
             maps += int(matches[0])
         if maps > 0:
-            return maps, 'Karten'
+            return maps, Units.Karten
 
         atlas_matches = re.findall('(\d+) (Atlas)', coverage)
 
@@ -501,16 +549,16 @@ class TransformSruExport(DataTransformation):
         for match in atlas_matches:
             atlas += int(match[0])
         if atlas > 0:
-            return atlas, 'Band'
-        folders, name = parse_folders(coverage, 'Kartenmappen')
+            return atlas, Units.Band
+        folders, name = parse_folders(coverage, Units.Kartenmappen)
         if folders > 0:
             return folders, name
 
-        return 4, 'Karten'
+        return 4, Units.Karten
 
-    def parse_letters(self, coverage):
+    def parse_letters(self, coverage: str) -> typing.Tuple[float, Units]:
         if coverage is None or empty.fullmatch(coverage):
-            return 2, 'Briefe'
+            return 2.0, Units.Briefe
 
         pages, name = parse_pages(coverage)
 
@@ -523,25 +571,25 @@ class TransformSruExport(DataTransformation):
             pages += 1
 
         if pages > 0:
-            return pages, 'Seiten'
+            return pages, Units.Seiten
 
         letters, name = parse_letters(coverage)
         if letters > 0:
             return letters, name
 
-        volumes, name = parse_volumes(coverage, 'Briefband')
+        volumes, name = parse_volumes(coverage, Units.Briefband)
         if volumes > 0:
             return volumes, name
 
-        folders, name = parse_folders(coverage, 'Briefmappe')
+        folders, name = parse_folders(coverage, Units.Briefmappen)
         if folders > 0:
             return folders, name
 
-        return 2, 'Briefe'
+        return 2.0, Units.Briefe
 
-    def parse_fotos(self, coverage):
+    def parse_fotos(self, coverage: str) -> typing.Tuple[float, Units]:
         if coverage is None or empty.fullmatch(coverage):
-            return 1, 'Seiten'
+            return 1.0, Units.Seiten
 
         pages, name = parse_pages(coverage)
 
@@ -551,22 +599,22 @@ class TransformSruExport(DataTransformation):
             pages += int(result[0])
 
         if pages > 0:
-            return pages, 'Seiten'
+            return pages, Units.Seiten
 
-        folders, name = parse_folders(coverage, 'Fotomappe')
+        folders, name = parse_folders(coverage, Units.Fotomappen)
         if folders > 0:
             return folders, name
 
-        return 1, 'Seiten'
+        return 1.0, Units.Seiten
 
-    def parse_books(self, coverage, swissbib_format):
+    def parse_books(self, coverage: str, swissbib_format: str) -> typing.Tuple[float, Units]:
         if swissbib_format == 'Artikel':
-            return_type = 'Artikel'
+            return_type = Units.Artikel
         else:
-            return_type = 'Band'
+            return_type = Units.Band
 
         if coverage is None or empty.fullmatch(coverage):
-            return 1, return_type
+            return 1.0, return_type
 
         num, name = parse_pages(coverage)
         if num > 0:
@@ -576,30 +624,30 @@ class TransformSruExport(DataTransformation):
         if volumes > 0:
             return volumes, name
 
-        return 1, return_type
+        return 1.0, return_type
 
-    def parse_manuscript(self, coverage):
+    def parse_manuscript(self, coverage: str) -> typing.Tuple[float, Units]:
         if coverage is None or empty.fullmatch(coverage):
-            return 1, 'Manuskriptband'
+            return 1.0, Units.Faszikel
 
         num, name = parse_pages(coverage)
         if num > 0:
             return num, name
 
-        volumes, name = parse_volumes(coverage, 'Manuskriptband')
+        volumes, name = parse_volumes(coverage, Units.Manuskriptband)
+        if volumes > 0:
+            return volumes, name
+
+        folders, name = parse_folders(coverage, Units.Faszikel)
+
         results = re.findall('(\d+) (Stücke|Papiertüte[n]?|Faszikel|Dossier|Broschüre|Zeichenbuch|'
                              'Heft(e|chen)?|Schuber|Bündel|Konvolut|Schulheft|Umschläge|Büchlein|Umschlag|Predigten)',
                              coverage)
         for result in results:
             volumes += int(result[0])
 
-        if volumes > 0:
-            return volumes, 'Manuskriptband'
-
-        folders, name = parse_folders(coverage, 'Manuskriptmappen')
-
         if folders > 0:
-            return folders, name
+            return folders, Units.Faszikel
 
         num, name = parse_boxes(coverage)
 
@@ -611,17 +659,17 @@ class TransformSruExport(DataTransformation):
         if letters > 0:
             return letters, name
 
-        return 1, 'Manuskriptband'
+        return 1.0, Units.Faszikel
 
-    def parse_dossier(self, coverage):
+    def parse_dossier(self, coverage: str) -> typing.Tuple[float, Units]:
         if coverage is None or empty.fullmatch(coverage):
-            return 1, 'Archiveinheit'
+            return 1.0, Units.Archiveinheit
 
         pages, name = parse_pages(coverage)
         if pages > 0:
             return pages, name
 
-        volumes, name = parse_volumes(coverage, 'Band')
+        volumes, name = parse_volumes(coverage, Units.Band)
         if volumes > 0:
             return volumes, name
 
@@ -629,7 +677,7 @@ class TransformSruExport(DataTransformation):
         if boxes > 0:
             return boxes, name
 
-        folders, name = parse_folders(coverage, 'Mappen')
+        folders, name = parse_folders(coverage, Units.Mappen)
         if folders > 0:
             return folders, name
 
@@ -641,11 +689,11 @@ class TransformSruExport(DataTransformation):
         if letters > 0:
             return letters, name
 
-        archives, name = parse_archive(coverage, 'Archiveinheit')
+        archives, name = parse_archive(coverage, Units.Archiveinheit)
         if archives > 0:
             return archives, name
 
-        return 1, 'Archiveinheit'
+        return 1.0, Units.Archiveinheit
 
     def parse_record_type(self):
         """Defines a general type for the record.
