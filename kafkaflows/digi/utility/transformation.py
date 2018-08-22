@@ -744,7 +744,7 @@ class TransformSruExport(DataTransformation):
                 if field['j'] != '':
                     self.marc.append_value('call_number', field['j'])
 
-        if 'call_number' in self.marc.result['call_number']:
+        if 'call_number' in self.marc.result:
             results = self.create_call_number_filter()
             if results is not None:
                 self.marc.add_value_sub('filter', 'prefix', results[0])
