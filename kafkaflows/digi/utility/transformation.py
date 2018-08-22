@@ -734,7 +734,8 @@ class TransformSruExport(DataTransformation):
 
             if field['F'] in ['A100', 'A125']:
                 self.marc.append_value('library', field['F'])
-                self.marc.append_value('call_number', field['j'])
+                if field['j'] != '':
+                    self.marc.append_value('call_number', field['j'])
 
         # TODO: Implement a way to process all the call numbers, since one title
         # can have many of them.
