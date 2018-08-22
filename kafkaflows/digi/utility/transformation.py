@@ -798,7 +798,7 @@ class TransformSruExport(DataTransformation):
                    double_word_roman.group(4), \
                    double_word_roman.group(5)
 
-        three_word = re.fullmatch('(\w+) ([\w\-*]+) ([\w\-*]+) ([\w\-*]+)(.*)?', call_number)
+        three_word = re.fullmatch('(\w+) ([\w\-*]+) ([\w\-*]+) ([A-Za-z\-*]+)(.*)?', call_number)
         if three_word:
             return three_word.group(1), \
                    three_word.group(2) + ' ' + three_word.group(3), \
