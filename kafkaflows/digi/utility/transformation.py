@@ -5,7 +5,7 @@ from kafka_event_hub.consumers.utility import DataTransformation
 from simple_elastic import ElasticIndex
 from roman import fromRoman, InvalidRomanNumeralError
 
-import typing
+from typing import Optional, Tuple, Union
 import logging
 import re
 from enum import Enum
@@ -108,7 +108,7 @@ regex_dossier = re.compile('(\d+) Dossier[s]?')
 regex_serie = re.compile('(\d+) Serie')
 
 
-def parse_archive(coverage: str, return_type: Units) -> typing.Tuple[float, Units]:
+def parse_archive(coverage: str, return_type: Units) -> Tuple[int, Units]:
     archive = 0
     results = regex_dossier.findall(coverage)
     for result in results:
@@ -128,7 +128,7 @@ def parse_archive(coverage: str, return_type: Units) -> typing.Tuple[float, Unit
         return 0, Units.No
 
 
-def parse_meters(coverage: str) -> typing.Tuple[float, Units]:
+def parse_meters(coverage: str) -> Tuple[float, Units]:
     lfm = 0
     results = regex_laufmeter.findall(coverage)
     for result in results:
@@ -140,7 +140,7 @@ def parse_meters(coverage: str) -> typing.Tuple[float, Units]:
         return 0, Units.No
 
 
-def parse_folders(coverage: str, return_type: Units) -> typing.Tuple[float, Units]:
+def parse_folders(coverage: str, return_type: Units) -> Tuple[int, Units]:
     folders = 0
     results = regex_folders.findall(coverage)
     for result in results:
@@ -152,7 +152,7 @@ def parse_folders(coverage: str, return_type: Units) -> typing.Tuple[float, Unit
         return 0, Units.No
 
 
-def parse_boxes(coverage: str) -> typing.Tuple[float, Units]:
+def parse_boxes(coverage: str) -> Tuple[Union[float, int], Units]:
     boxes = lfm = 0
     results = regex_boxes.findall(coverage)
     for result in results:
@@ -169,7 +169,7 @@ def parse_boxes(coverage: str) -> typing.Tuple[float, Units]:
         return 0, Units.No
 
 
-def parse_letters(coverage: str) -> typing.Tuple[float, Units]:
+def parse_letters(coverage: str) -> Tuple[int, Units]:
     letters = 0
     results = regex_letters.findall(coverage)
     for result in results:
@@ -181,7 +181,7 @@ def parse_letters(coverage: str) -> typing.Tuple[float, Units]:
         return 0, Units.No
 
 
-def parse_volumes(coverage: str, return_type: Units) -> typing.Tuple[float, Units]:
+def parse_volumes(coverage: str, return_type: Units) -> Tuple[int, Units]:
     volumes = 0
     results = regex_volumes_word_number.findall(coverage)
     if len(results) > 0:
@@ -201,7 +201,7 @@ def parse_volumes(coverage: str, return_type: Units) -> typing.Tuple[float, Unit
         return 0, Units.No
 
 
-def parse_pages(coverage: str) -> typing.Tuple[float, Units]:
+def parse_pages(coverage: str) -> Tuple[int, Units]:
     pages = 0
     results = regex_pages.findall(coverage)
     for result in results:
@@ -462,7 +462,7 @@ class TransformSruExport(DataTransformation):
         else:
             self.marc.add_value_sub('final', 'pages', pages)
 
-    def parse_coverage_field(self) -> typing.Tuple[float, Units]:
+    def parse_coverage_field(self) -> Tuple[Union[float, int], Units]:
         """Parses various values from the coverage field and returns them as tuple:
 
         (number of unit, name of unit)
@@ -491,11 +491,11 @@ class TransformSruExport(DataTransformation):
             logging.error('Could not parse %s, with coverage %s and format %s.', self.marc.result['identifier'],
                           coverage, swissbib_format
                           )
-            return 1.0, Units.Seiten
+            return 1, Units.Seiten
 
-    def parse_partituren(self, coverage: str) -> typing.Tuple[float, Units]:
+    def parse_partituren(self, coverage: str) -> Tuple[Union[float, int], Units]:
         if coverage is None or empty.fullmatch(coverage):
-            return 1.0, Units.Partitur
+            return 1, Units.Partitur
 
         num, name = parse_pages(coverage)
         if num > 0:
@@ -503,11 +503,11 @@ class TransformSruExport(DataTransformation):
 
         stimmen = re.match('Stimme', coverage)
         if stimmen:
-            return 1.0, Units.Stimmen
+            return 1, Units.Stimmen
 
         stimmen = re.match('Stimmen', coverage)
         if stimmen:
-            return 3.0, Units.Stimmen
+            return 3, Units.Stimmen
 
         num, name = parse_volumes(coverage, Units.Partitur)
 
@@ -528,7 +528,7 @@ class TransformSruExport(DataTransformation):
 
         return 1, Units.Partitur
 
-    def parse_maps(self, coverage: str) -> typing.Tuple[float, Units]:
+    def parse_maps(self, coverage: str) -> Tuple[Union[float, int], Units]:
         if coverage is None or empty.fullmatch(coverage):
             return 4, Units.Karten
 
@@ -556,9 +556,9 @@ class TransformSruExport(DataTransformation):
 
         return 4, Units.Karten
 
-    def parse_letters(self, coverage: str) -> typing.Tuple[float, Units]:
+    def parse_letters(self, coverage: str) -> Tuple[Union[float, int], Units]:
         if coverage is None or empty.fullmatch(coverage):
-            return 2.0, Units.Briefe
+            return 2, Units.Briefe
 
         pages, name = parse_pages(coverage)
 
@@ -585,11 +585,11 @@ class TransformSruExport(DataTransformation):
         if folders > 0:
             return folders, name
 
-        return 2.0, Units.Briefe
+        return 2, Units.Briefe
 
-    def parse_fotos(self, coverage: str) -> typing.Tuple[float, Units]:
+    def parse_fotos(self, coverage: str) -> Tuple[int, Units]:
         if coverage is None or empty.fullmatch(coverage):
-            return 1.0, Units.Seiten
+            return 1, Units.Seiten
 
         pages, name = parse_pages(coverage)
 
@@ -605,16 +605,16 @@ class TransformSruExport(DataTransformation):
         if folders > 0:
             return folders, name
 
-        return 1.0, Units.Seiten
+        return 1, Units.Seiten
 
-    def parse_books(self, coverage: str, swissbib_format: str) -> typing.Tuple[float, Units]:
+    def parse_books(self, coverage: str, swissbib_format: str) -> Tuple[int, Units]:
         if swissbib_format == 'Artikel':
             return_type = Units.Artikel
         else:
             return_type = Units.Band
 
         if coverage is None or empty.fullmatch(coverage):
-            return 1.0, return_type
+            return 1, return_type
 
         num, name = parse_pages(coverage)
         if num > 0:
@@ -624,11 +624,11 @@ class TransformSruExport(DataTransformation):
         if volumes > 0:
             return volumes, name
 
-        return 1.0, return_type
+        return 1, return_type
 
-    def parse_manuscript(self, coverage: str) -> typing.Tuple[float, Units]:
+    def parse_manuscript(self, coverage: str) -> Tuple[Union[float, int], Units]:
         if coverage is None or empty.fullmatch(coverage):
-            return 1.0, Units.Faszikel
+            return 1, Units.Faszikel
 
         num, name = parse_pages(coverage)
         if num > 0:
@@ -659,11 +659,11 @@ class TransformSruExport(DataTransformation):
         if letters > 0:
             return letters, name
 
-        return 1.0, Units.Faszikel
+        return 1, Units.Faszikel
 
-    def parse_dossier(self, coverage: str) -> typing.Tuple[float, Units]:
+    def parse_dossier(self, coverage: str) -> Tuple[Union[int, float], Units]:
         if coverage is None or empty.fullmatch(coverage):
-            return 1.0, Units.Archiveinheit
+            return 1, Units.Archiveinheit
 
         pages, name = parse_pages(coverage)
         if pages > 0:
@@ -693,7 +693,7 @@ class TransformSruExport(DataTransformation):
         if archives > 0:
             return archives, name
 
-        return 1.0, Units.Archiveinheit
+        return 1, Units.Archiveinheit
 
     def parse_record_type(self):
         """Defines a general type for the record.
@@ -729,6 +729,13 @@ class TransformSruExport(DataTransformation):
         Books older than 1920 are very rare in A140 (UB Medizin)
         The books in A130 (Altertum) are ignored, because there are not that many, and it would
         be necessary to further filter the books from UBH.
+
+        # TODO: Implement a way to process all the call numbers, since one title
+        # can have many of them.
+        # currently just picks the first one.
+        # books can have multiple call numbers for two reasons:
+        # 1. The library owns more than one item.
+        # 2. The bibliographic record describes multiple parts of one title.
         """
         for field in self.marc.get_fields('949'):
 
@@ -737,43 +744,78 @@ class TransformSruExport(DataTransformation):
                 if field['j'] != '':
                     self.marc.append_value('call_number', field['j'])
 
-        # TODO: Implement a way to process all the call numbers, since one title
-        # can have many of them.
-        # currently just picks the first one.
-        # books can have multiple call numbers for two reasons:
-        # 1. The library owns more than one item.
-        # 2. The bibliographic record describes multiple parts of one title.
-        if 'call_number' in self.marc.result:
-            call_number = self.marc.result['call_number'][0].strip()
-            if ':' in call_number:
-                values = call_number.split(':')
-                if len(values) == 2:
-                    issue_number = None
-                    volume_number = values[1].strip()
-                    values = values[0].strip().split(' ')
-                elif len(values) == 3:
-                    issue_number = values[2].strip()
-                    volume_number = values[1].strip()
-                    values = values[0].strip().split(' ')
-                else:
-                    issue_number = None
-                    volume_number = None
-                    values = values[0].strip().split(' ')
-                    self.marc.add_error_tag('_invalid_call_number')
-            else:
-                issue_number = None
-                volume_number = None
-                values = call_number.split(' ')
-            self.marc.add_value_sub('filter', 'prefix', values[0])
-            count = 0
-            for value in values[1:]:
-                count += 1
-                self.marc.add_value_sub('filter', 'part-{}'.format(count), value)
+        if 'call_number' in self.marc.result['call_number']:
+            results = self.create_call_number_filter()
+            if results is not None:
+                self.marc.add_value_sub('filter', 'prefix', results[0])
+                if results[1] is not None:
+                    self.marc.add_value_sub('filter', 'base', results[1])
+                if results[2] is not None:
+                    self.marc.add_value_sub('filter', 'second', results[2])
+                self.marc.add_value_sub('filter', 'number', results[3])
 
-            if volume_number:
-                self.marc.add_value_sub('filter', 'volume', volume_number)
-            if issue_number:
-                self.marc.add_value_sub('filter', 'issue', issue_number)
+    def create_call_number_filter(self) -> Optional[Tuple[str, Optional[str], Optional[str], str]]:
+        call_number = ''
+        if len(self.marc.result['call_number']) == 1:
+            call_number = self.marc.result['call_number'][0]
+        else:
+            for call_n in self.marc.result['call_number']:
+                if call_n.startswith('UBH'):
+                    call_number = call_n
+
+        call_number = re.sub('\s+', ' ', call_number.strip())
+
+        database = self.marc.result['database']
+
+        if database == 'dsv05' and call_number != '':
+            call_number = 'HAN ' + call_number
+
+        if call_number == '':
+            # remove call number if it is empty.
+            del self.marc.result['call_number']
+            return None
+
+        if not re.match('(UBH|HAN)', call_number) or re.fullmatch('UBH', call_number):
+            # ignore anything which does not comply with convention.
+            return None
+
+        simple = re.fullmatch('(\w+) ([\w\-*.]+) (\d+)(.*)?', call_number)
+        if simple:
+            return simple.group(1), simple.group(2), None, (simple.group(3) + simple.group(4)).strip()
+
+        word_roman = re.fullmatch('(\w+) (\w+) ([MCLXVI]+[ ]?[a-z]?) (\d+)(.*)?', call_number)
+        if word_roman:
+            return word_roman.group(1), \
+                   word_roman.group(2), \
+                   word_roman.group(3),  \
+                   (word_roman.group(4) + word_roman.group(5)).strip()
+
+        double_word_roman = re.fullmatch('(\w+) ([\w\-*]+) ([\w\-*]+) ([MCLXVI]+[ ]?[a-z]?) (\d+)(.*)?',
+                                         call_number)
+        if double_word_roman:
+            return double_word_roman.group(1), \
+                   double_word_roman.group(2) + ' ' + double_word_roman.group(3), \
+                   double_word_roman.group(4), \
+                   double_word_roman.group(5)
+
+        three_word = re.fullmatch('(\w+) ([\w\-*]+) ([\w\-*]+) ([\w\-*]+)(.*)?', call_number)
+        if three_word:
+            return three_word.group(1), \
+                   three_word.group(2) + ' ' + three_word.group(3), \
+                   three_word.group(4), \
+                   three_word.group(5).strip()
+
+        double_word = re.fullmatch('(\w+) ([\w\-*]+) ([\w\-*]+)(.*)?', call_number)
+        if double_word:
+            return double_word.group(1), double_word.group(2), double_word.group(3), double_word.group(4).strip()
+
+        rest_han = re.fullmatch('(HAN) (.*)', call_number)
+        if rest_han:
+            return rest_han.group(1), None, None, rest_han.group(2).strip()
+
+        rest_ubh = re.fullmatch('(UBH) (.*)', call_number)
+        if rest_ubh:
+            return rest_ubh.group(1), None, None, rest_ubh.group(2).strip()
 
     def parse_format_codes(self):
         """Parse the format codes and replace them with human readable forms.
