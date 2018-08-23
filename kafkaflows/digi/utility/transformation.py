@@ -294,7 +294,7 @@ class TransformSruExport(DataTransformation):
         No live updates, as the digidata repository is on Afrikaportal-elastic,
         which is only on localhost accessible. To update run the digispace-producer & digispace-consumer.
 
-        TODO: Load live data instead of copy.
+        TODO: Load live data instead of copy. To do this direct access to Afrikaportal is necessary.
         """
         query = {
             "query": {
@@ -429,13 +429,6 @@ class TransformSruExport(DataTransformation):
         First source: digidata number of images.
         Second source: coverage
         Third source: estimates.
-
-        TODO: Implement a way to see where the pages field comes from.
-        TODO: Fix bug where page series is not calculated correctly (see 072465301)
-        TODO: Check if number of images is a good number! (number of images for series seem low?)
-        TODO: Make sure that all three values are calculated and then picked at the end.
-        -> this way I can improve the logic which number is picked.
-
         """
 
         self.marc.parse_field_to_subfield('300', 'a', 'extent', 'coverage')
@@ -465,6 +458,8 @@ class TransformSruExport(DataTransformation):
         if 'number_of_images' in self.marc.result:
             pages = self.marc.result['number_of_images']
             self.marc.add_value_sub('source', 'pages', 'digidata')
+            if ['estimate'] in self.marc.result['source']:
+                del self.marc.result['source']['estimate']
 
         self.marc.add_value_sub('final', 'pages', pages)
 
