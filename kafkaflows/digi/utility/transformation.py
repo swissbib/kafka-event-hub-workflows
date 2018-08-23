@@ -399,6 +399,10 @@ class TransformSruExport(DataTransformation):
                     self.marc.add_value_sub('loans', record['year'], record['loans'])
             self.marc.add_value_sub('reservations', 'total', total_reservations)
             self.marc.add_value_sub('loans', 'total', total_loans)
+        else:
+            # place holder values for scripted fields.
+            self.marc.add_value_sub('reservations', 'total', 0)
+            self.marc.add_value_sub('loans', 'total', 0)
 
     def parse_date(self):
         """Parsing the date from the various possible fields. Stores where the information was taken from."""
