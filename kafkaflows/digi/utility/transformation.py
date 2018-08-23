@@ -429,38 +429,44 @@ class TransformSruExport(DataTransformation):
         First source: digidata number of images.
         Second source: coverage
         Third source: estimates.
-        """
-        if 'number_of_pages' in self.marc.result:
-            pages = self.marc.result['number_of_pages']
-        else:
-            self.marc.parse_field_to_subfield('300', 'a', 'extent', 'coverage')
-            num = 0
-            name = Units.No
 
-            if self.marc.result['c-format'] in ['Objekt', 'Diverse Tonformate', 'Schallplatte', 'Diverse Filmformate', 'Datenbank']:
-                num = 1
-                name = Units.Gegenstand
-            if self.marc.result['c-format'] in ['Zeitung', 'Zeitschrift / Schriftenreihe']:
-                # TODO: Bessere implementierung von Zeitschriften.
-                num = 1
-                name = Units.Periodikum
+        TODO: Implement a way to see where the pages field comes from.
+        TODO: Fix bug where page series is not calculated correctly (see 072465301)
+        TODO: Check if number of images is a good number! (number of images for series seem low?)
+        TODO: Make sure that all three values are calculated and then picked at the end.
+        -> this way I can improve the logic which number is picked.
+
+        """
+
+        self.marc.parse_field_to_subfield('300', 'a', 'extent', 'coverage')
+        pages = 0
+        name = Units.No
+        # This will be filtered anyway.
+        if self.marc.result['c-format'] in ['Objekt', 'Diverse Tonformate', 'Schallplatte', 'Diverse Filmformate', 'Datenbank']:
+            pages = 1
+            name = Units.Gegenstand
+            self.marc.add_value_sub('source', 'pages', 'format')
+
+        if name == Units.No:
+            pages, name = self.parse_coverage_field()
 
             if name == Units.No:
-                num, name = self.parse_coverage_field()
+                raise ValueError('Name should not be None here: {}. {}'.format(self.marc.result['identifier'], pages))
 
-                if name == Units.No:
-                    raise ValueError('Name should not be None here: {}. {}'.format(self.marc.result['identifier'], num))
+            if name != Units.Seiten:
+                self.marc.add_value_sub('source', 'pages', 'estimate')
+                self.marc.add_value_sub('source', 'estimate', name.value)
+                pages = pages * self.page_conversion_rates[name.value]
+            else:
+                self.marc.add_value_sub('source', 'pages', 'coverage')
 
-                if name != Units.Seiten:
-                    num = num * self.page_conversion_rates[name.value]
-            pages = num
+            self.marc.add_value_sub('extent', 'pages', pages)
 
-        if pages == 0:
-            # This should not happen!
-            self.marc.add_error_tag('_no_page_value')
-            self.marc.add_value_sub('final', 'pages', 1)
-        else:
-            self.marc.add_value_sub('final', 'pages', pages)
+        if 'number_of_images' in self.marc.result:
+            pages = self.marc.result['number_of_images']
+            self.marc.add_value_sub('source', 'pages', 'digidata')
+
+        self.marc.add_value_sub('final', 'pages', pages)
 
     def parse_coverage_field(self) -> Tuple[Union[float, int], Units]:
         """Parses various values from the coverage field and returns them as tuple:
@@ -487,6 +493,30 @@ class TransformSruExport(DataTransformation):
             return self.parse_manuscript(coverage)
         elif swissbib_format in ['Dossier']:
             return self.parse_dossier(coverage)
+        elif swissbib_format in ['Zeitung', 'Zeitschrift / Schriftenreihe']:
+            # TODO: Bessere implementierung von Zeitschriften.
+            if coverage is None:
+                return 1, Units.Periodikum
+
+            num, name = parse_volumes(coverage, Units.Band)
+            if num > 0:
+                return num, name
+
+            year = None
+            to = None
+            if 'dates' in self.marc.result:
+                if 'date' in self.marc.result['dates']:
+                    if 'year' in self.marc.result['dates']['date']:
+                        year = self.marc.result['dates']['date']['year']
+                    if 'to' in self.marc.result['dates']['date']:
+                        to = self.marc.result['dates']['date']['to']
+
+            if year is not None and to is not None:
+                return year - to, Units.Band
+            elif year is not None:
+                return 1, Units.Band
+            else:
+                return 1, Units.Periodikum
         else:
             logging.error('Could not parse %s, with coverage %s and format %s.', self.marc.result['identifier'],
                           coverage, swissbib_format
@@ -712,6 +742,7 @@ class TransformSruExport(DataTransformation):
             elif self.marc.result['print_material'] in ['Manuskript', 'Notenmanuskript']:
                 self.marc.add_value_sub('final', 'type', 'manuscript')
             else:
+                self.marc.add_value_sub('final', 'type', 'other')
                 self.marc.add_error_tag('_unknown_print_material')
                 logging.warning('Unknown print material: %s in %s.', self.marc.result['print_material'],
                                 self.marc.result['identifier'])
