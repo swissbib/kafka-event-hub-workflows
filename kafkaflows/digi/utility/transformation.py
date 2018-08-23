@@ -458,7 +458,7 @@ class TransformSruExport(DataTransformation):
         if 'number_of_images' in self.marc.result:
             pages = self.marc.result['number_of_images']
             self.marc.add_value_sub('source', 'pages', 'digidata')
-            if ['estimate'] in self.marc.result['source']:
+            if 'estimate' in self.marc.result['source']:
                 del self.marc.result['source']['estimate']
 
         self.marc.add_value_sub('final', 'pages', pages)
