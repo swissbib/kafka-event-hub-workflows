@@ -71,7 +71,7 @@ regex_pages = re.compile('[\[]?(\d+)[\]]? '
                          'Zettel[n]?'
                          ')')
 
-regex_pages_single = re.compile('(S|Bl)[.]? (\d+)')
+regex_pages_single = re.compile('(S|Bl)[.]? (\d+)([^-0-9]|$)')
 regex_pages_range = re.compile('(S|Bl|fol)[.]? (\d+)-(\d+)')
 regex_pages_partial = re.compile('(\d+)?([ ]?[¼½¾]|[.,]\d+| \d/\d) (Bl|S)\.')
 
@@ -207,13 +207,13 @@ def parse_pages(coverage: str) -> Tuple[int, Units]:
     for result in results:
         pages += int(result[0])
 
-    results = regex_pages_single.findall(coverage)
-    for result in results:
-        pages += int(result[1])
-
     results = regex_pages_range.findall(coverage)
     for result in results:
         pages += int(result[2]) - int(result[1]) + 1
+
+    results = regex_pages_single.findall(coverage)
+    for result in results:
+        pages += int(result[1])
 
     results = regex_pages_partial.findall(coverage)
     for result in results:
