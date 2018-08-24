@@ -1,9 +1,10 @@
 from kafkaflows.digi.utility.mapper import MARCMapper
 from kafkaflows.digi.utility.vufind_format_codes import swissbib_format_codes
+from kafkaflows.digi.e_plattforms.collect_hits import get_vlids, get_mapping_vlids_sys_num
 
 from kafka_event_hub.consumers.utility import DataTransformation
 from simple_elastic import ElasticIndex
-from roman import fromRoman, InvalidRomanNumeralError
+from roman import fromRoman
 
 from typing import Optional, Tuple, Union
 import logging
@@ -287,6 +288,7 @@ class TransformSruExport(DataTransformation):
         self.enrich_swissbib_hits()
         self.enrich_opac_hits()
         self.enrich_loans_and_reservations()
+        self.enrich_e_plattform_data()
 
     def enrich_digidata(self):
         """Loads data from the digidata elastic repository.
@@ -403,6 +405,9 @@ class TransformSruExport(DataTransformation):
             # place holder values for scripted fields.
             self.marc.add_value_sub('reservations', 'total', 0)
             self.marc.add_value_sub('loans', 'total', 0)
+
+    def enrich_e_plattform_data(self):
+        pass
 
     def parse_date(self):
         """Parsing the date from the various possible fields. Stores where the information was taken from."""
