@@ -95,13 +95,16 @@ if __name__ == '__main__':
         p = mapping[sys_number]['path']
         for y in ['2016', '2017', '2018']:
             for v in mapping[sys_number]['vlids']:
+                if sys_number not in result:
+                    result[sys_number] = dict()
                 if v in vlids[p][y]:
-                    if sys_number not in result:
-                        result[sys_number] = dict()
                     if y not in result[sys_number]:
-                        result[sys_number][y] = vlids[p][y][v]
+                        result[sys_number][y] = vlids[p][y][v]['page-views']
                     else:
-                        result[sys_number][y]['page-views'] += vlids[p][y][v]['page-views']
+                        result[sys_number][y] += vlids[p][y][v]['page-views']
+                else:
+                    if y not in result[sys_number]:
+                        result[sys_number][y] = 0
 
     with open('data/collected-hits.json', 'w') as fp:
         json.dump(result, fp, ensure_ascii=False, indent='    ')
