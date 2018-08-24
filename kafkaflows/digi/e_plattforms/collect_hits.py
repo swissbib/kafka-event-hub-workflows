@@ -106,6 +106,6 @@ if __name__ == '__main__':
                     if y not in result[sys_number]:
                         result[sys_number][y] = 0
 
-    with open('data/collected-hits.json', 'w') as fp:
+    with open('data/collected-hits-e-plattforms.json', 'w') as fp:
         json.dump(result, fp, ensure_ascii=False, indent='    ')
 
