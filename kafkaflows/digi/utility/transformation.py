@@ -8,6 +8,7 @@ from roman import fromRoman
 
 from typing import Optional, Tuple, Union
 import logging
+import json
 import re
 from enum import Enum
 
@@ -245,6 +246,8 @@ class TransformSruExport(DataTransformation):
         self.marc = None
         self.digidata_index = ElasticIndex(**config['digidata'])
         self.swissbib_elk_host = config['swissbib.host']
+        with open(config['e-plattforms'], 'r') as fp:
+            self.e_plattform_data = json.load(fp)
         self.opac = ElasticIndex(**config['opac'])
         self.reservations = ElasticIndex(**config['reservations'])
         self.page_conversion_rates = config['page-conversions']
@@ -407,7 +410,12 @@ class TransformSruExport(DataTransformation):
             self.marc.add_value_sub('loans', 'total', 0)
 
     def enrich_e_plattform_data(self):
-        pass
+        """Enrich the collected hits from e-plattforms (e-rara & e-manuscripta)."""
+        identifier = self.marc.result['identifiers'][self._database]
+        if identifier in self.e_plattform_data:
+            self.marc.add_value_sub('hits', 'e-plattform', self.e_plattform_data[identifier])
+        else:
+            self.marc.add_value_sub('hits', 'e-plattform', {'2016': 0, '2017': 0, '2018': 0})
 
     def parse_date(self):
         """Parsing the date from the various possible fields. Stores where the information was taken from."""
