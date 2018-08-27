@@ -117,13 +117,10 @@ if __name__ == '__main__':
         total = 0
         for year in item[list(item.keys())[0]]:
             total += item[list(item.keys())[0]][year]
-        item['total'] = sys_number
+        item['total'] = total
         item['identifier'] = sys_number
         elastic_data.append(item)
 
     index = ElasticIndex('e-data', 'hits')
     index.bulk(elastic_data, 'identifier')
-
-    with open('data/collected-hits-e-plattforms.json', 'w') as fp:
-        json.dump(result, fp, ensure_ascii=False, indent='    ')
 
