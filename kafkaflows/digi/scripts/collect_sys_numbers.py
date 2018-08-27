@@ -7,11 +7,11 @@ if __name__ == '__main__':
     dsv01 = set()
     dsv05 = set()
 
-    index_aleph = ElasticIndex('alepth-dsv01-data', 'hits')
-    index_core = ElasticIndex('kafka-*', 'record')
-    index_e_plattforms = ElasticIndex('e-data', 'hits')
+    index_aleph = ElasticIndex('alepth-dsv01-data', 'hits', url='http://sb-ues2.swissbib.unibas.ch:9200')
+    index_core = ElasticIndex('kafka-*', 'record', url='http://sb-ues2.swissbib.unibas.ch:9200')
+    index_e_plattforms = ElasticIndex('e-data', 'hits', url='http://sb-ues2.swissbib.unibas.ch:9200')
 
-    index_digidata = ElasticIndex('add-digidata', 'data')
+    index_digidata = ElasticIndex('add-digidata', 'data', url='http://sb-ues2.swissbib.unibas.ch:9200')
 
     query = {
         '_source': ['system_number'],

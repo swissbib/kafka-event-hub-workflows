@@ -320,24 +320,30 @@ class TransformSruExport(DataTransformation):
         """
         identifier = self.marc.result['identifier']
 
+        total = 0
         hits = dict()
-        for year in range(2016, 2019):
+        for year in range(2018, 2019):
             sru = ElasticIndex('sru-{}'.format(year), doc_type='logs',
                                url=self.swissbib_elk_host)
             hits['sru'] = dict()
             query = {'query': {'match': {'requestparams': identifier}}}
-            hits['sru'][str(year)] = len(sru.scan_index(query=query))
+            num = len(sru.scan_index(query=query))
+            hits['sru'][str(year)] = num
+            total += num
 
         for source in ['green', 'jus', 'bb']:
             hits[source] = dict()
-            for year in range(2016, 2019):
+            for year in range(2017, 2019):
                 swissbib = ElasticIndex('swissbib-{}-{}'.format(source, year),
                                         doc_type='logs',
                                         url=self.swissbib_elk_host)
 
                 query = {'query': {'term': {'request_middle.keyword': {'value': identifier}}}}
-                hits[source][str(year)] = len(swissbib.scan_index(query=query))
+                num = len(swissbib.scan_index(query=query))
+                hits[source][str(year)] = num
+                total += num
 
+        hits['total'] = total
         self.marc.add_value_sub('hits', 'swissbib', hits)
 
     def enrich_opac_hits(self):
@@ -409,7 +415,7 @@ class TransformSruExport(DataTransformation):
         identifier = self.marc.result['identifiers'][self._database]
 
         query = {
-            '_source': ['erara-bau.*', 'emanus-bau.*', 'emanus-swa.*'],
+            '_source': ['erara-bau.*', 'emanus-bau.*', 'emanus-swa.*', 'total'],
             'query': {
                 'term': {
                     '_id': {
@@ -422,8 +428,11 @@ class TransformSruExport(DataTransformation):
         results = self.e_plattform_data.scan_index(query=query)
         for item in results:
             for key in item:
-                data['e-plattform'] = item[key]
-                self.marc.add_value_sub('ŝource', 'e-plattform', key)
+                if key in ['emanus-bau', 'emanus-swa', 'erara-bau']:
+                    item[key]['total'] = item['total']
+                    del item['total']
+                    data['e-plattform'] = item[key]
+                    self.marc.add_value_sub('ŝource', 'e-plattform', key)
 
         if len(data.keys()) == 0:
             data['e-plattform'] = {'2016': 0, '2017': 0, '2018': 0, 'total': 0}
