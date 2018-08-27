@@ -30,6 +30,8 @@ class Transformation(DataTransformation):
             pass
         else:
             result['database'] = db_translation[db]
+            while len(sys_number) < 9:
+                sys_number = '0' + sys_number
             result['system_number'] = sys_number
             if 'images' in record:
                 result['number_of_images'] = record['images']
