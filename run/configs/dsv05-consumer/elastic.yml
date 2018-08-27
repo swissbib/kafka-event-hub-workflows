@@ -38,6 +38,12 @@ DataTransformation:
       url: http://sb-ues2.swissbib.unibas.ch:9200
       timeout: 300
       mapping: null
+    e-data:
+      index: e-data
+      doc_type: hits
+      url: http://sb-ues2.swissbib.unibas.ch:9200
+      timeout: 300
+      mapping: null
     swissbib.host: http://sb-uesl1.swissbib.unibas.ch:8080
     page-conversions:
       Band: 245
