@@ -374,9 +374,9 @@ class TransformSruExport(DataTransformation):
         if identifier > 320000 and self._database == 'dsv01':
             self.marc.add_value_sub('hits', 'opac-access', {'total': hits})
         elif identifier <= 320000 and self._database == 'dsv05':
-            self.marc.add_value('hits', 'opac-access', {'total': hits})
+            self.marc.add_value_sub('hits', 'opac-access', {'total': hits})
         elif identifier <= 320000 and self._database == 'dsv01':
-            self.marc.add_value('hits', 'opac-access', {'total': hits})
+            self.marc.add_value_sub('hits', 'opac-access', {'total': hits})
             self.marc.add_error_tag('_maybe_dsv05_hits')
 
     def enrich_loans_and_reservations(self):
