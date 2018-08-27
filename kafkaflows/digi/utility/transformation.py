@@ -413,9 +413,12 @@ class TransformSruExport(DataTransformation):
         """Enrich the collected hits from e-plattforms (e-rara & e-manuscripta)."""
         identifier = self.marc.result['identifiers'][self._database]
         if identifier in self.e_plattform_data:
-            self.marc.add_value_sub('hits', 'e-plattform', self.e_plattform_data[identifier])
+            data = self.e_plattform_data[identifier]
+            data['total'] = data['2016'] + data['2017'] + data['2018']
+            self.marc.add_value_sub('hits', 'e-plattform', data)
         else:
-            self.marc.add_value_sub('hits', 'e-plattform', {'2016': 0, '2017': 0, '2018': 0})
+            self.marc.add_value_sub('hits', 'e-plattform', {'2016': 0, '2017': 0, '2018': 0, 'total': 0})
+
 
     def parse_date(self):
         """Parsing the date from the various possible fields. Stores where the information was taken from."""
