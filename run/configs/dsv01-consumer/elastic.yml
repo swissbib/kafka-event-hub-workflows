@@ -32,9 +32,9 @@ DataTransformation:
       url: http://sb-ues2.swissbib.unibas.ch:9200
       timeout: 300
       mapping: null
-    reservations:
-      index: reservations
-      doc_type: record
+    aleph:
+      index: aleph-dsv01-data
+      doc_type: hits
       url: http://sb-ues2.swissbib.unibas.ch:9200
       timeout: 300
       mapping: null

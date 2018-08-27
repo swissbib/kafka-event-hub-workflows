@@ -1,6 +1,5 @@
 from kafkaflows.digi.utility.mapper import MARCMapper
 from kafkaflows.digi.utility.vufind_format_codes import swissbib_format_codes
-from kafkaflows.digi.e_plattforms.collect_hits import get_vlids, get_mapping_vlids_sys_num
 
 from kafka_event_hub.consumers.utility import DataTransformation
 from simple_elastic import ElasticIndex
@@ -249,7 +248,7 @@ class TransformSruExport(DataTransformation):
         with open(config['e-plattforms'], 'r') as fp:
             self.e_plattform_data = json.load(fp)
         self.opac = ElasticIndex(**config['opac'])
-        self.reservations = ElasticIndex(**config['reservations'])
+        self.aleph = ElasticIndex(**config['aleph'])
         self.page_conversion_rates = config['page-conversions']
 
     def transform(self, value: str) -> dict:
@@ -368,11 +367,11 @@ class TransformSruExport(DataTransformation):
         hits = len(self.opac.scan_index(query=query))
         identifier = int(self.marc.result['identifiers'][self._database])
         if identifier > 320000 and self._database == 'dsv01':
-            self.marc.add_value('opac_access', hits)
+            self.marc.add_value_sub('hits', 'opac-access', {'total': hits})
         elif identifier <= 320000 and self._database == 'dsv05':
-            self.marc.add_value('opac_access', hits)
+            self.marc.add_value('hits', 'opac-access', {'total': hits})
         elif identifier <= 320000 and self._database == 'dsv01':
-            self.marc.add_value('opac_access', hits)
+            self.marc.add_value('hits', 'opac-access', {'total': hits})
             self.marc.add_error_tag('_maybe_dsv05_hits')
 
     def enrich_loans_and_reservations(self):
@@ -382,32 +381,29 @@ class TransformSruExport(DataTransformation):
 
         TODO: Get dsv05 data.
         """
+        placeholder = {
+            'reservations': {'2016': 0, '2017': 0, '2018': 0, 'total': 0},
+            'loans': {'2016': 0, '2017': 0, '2018': 0, 'total': 0}
+        }
         if self._database == 'dsv01':
             query = {
+                '_source': ['reservations.*', 'loans.*'],
                 'query': {
                     'term': {
-                        'system_number': {
+                        '_id': {
                             'value': self.marc.result['identifiers'][self._database]
                         }
                     }
                 }
             }
-            results = self.reservations.scan_index(query=query)
-            total_reservations = 0
-            total_loans = 0
-            for record in results:
-                if 'reservations' in record:
-                    total_reservations += record['reservations']
-                    self.marc.add_value_sub('reservations', record['year'], record['reservations'])
-                if 'loans' in record:
-                    total_loans += record['loans']
-                    self.marc.add_value_sub('loans', record['year'], record['loans'])
-            self.marc.add_value_sub('reservations', 'total', total_reservations)
-            self.marc.add_value_sub('loans', 'total', total_loans)
+            results = self.aleph.scan_index(query=query)
+            if len(results) == 1:
+                self.marc.add_value('hits', results[0])
+            else:
+                self.marc.add_value('hits', placeholder)
         else:
             # place holder values for scripted fields.
-            self.marc.add_value_sub('reservations', 'total', 0)
-            self.marc.add_value_sub('loans', 'total', 0)
+            self.marc.add_value('hits', placeholder)
 
     def enrich_e_plattform_data(self):
         """Enrich the collected hits from e-plattforms (e-rara & e-manuscripta)."""
