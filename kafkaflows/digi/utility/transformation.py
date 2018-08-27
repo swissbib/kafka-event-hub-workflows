@@ -245,10 +245,9 @@ class TransformSruExport(DataTransformation):
         self.marc = None
         self.digidata_index = ElasticIndex(**config['digidata'])
         self.swissbib_elk_host = config['swissbib.host']
-        with open(config['e-plattforms'], 'r') as fp:
-            self.e_plattform_data = json.load(fp)
         self.opac = ElasticIndex(**config['opac'])
         self.aleph = ElasticIndex(**config['aleph'])
+        self.e_plattform_data = ElasticIndex(**config['e-data'])
         self.page_conversion_rates = config['page-conversions']
 
     def transform(self, value: str) -> dict:
@@ -322,7 +321,7 @@ class TransformSruExport(DataTransformation):
         identifier = self.marc.result['identifier']
 
         hits = dict()
-        for year in range(2017, 2019):
+        for year in range(2016, 2019):
             sru = ElasticIndex('sru-{}'.format(year), doc_type='logs',
                                url=self.swissbib_elk_host)
             hits['sru'] = dict()
@@ -331,7 +330,7 @@ class TransformSruExport(DataTransformation):
 
         for source in ['green', 'jus', 'bb']:
             hits[source] = dict()
-            for year in range(2017, 2019):
+            for year in range(2016, 2019):
                 swissbib = ElasticIndex('swissbib-{}-{}'.format(source, year),
                                         doc_type='logs',
                                         url=self.swissbib_elk_host)
@@ -339,7 +338,7 @@ class TransformSruExport(DataTransformation):
                 query = {'query': {'term': {'request_middle.keyword': {'value': identifier}}}}
                 hits[source][str(year)] = len(swissbib.scan_index(query=query))
 
-        self.marc.result['hits'] = hits
+        self.marc.add_value_sub('hits', 'swissbib', hits)
 
     def enrich_opac_hits(self):
         """Adds opac-access hits to data.
@@ -408,13 +407,27 @@ class TransformSruExport(DataTransformation):
     def enrich_e_plattform_data(self):
         """Enrich the collected hits from e-plattforms (e-rara & e-manuscripta)."""
         identifier = self.marc.result['identifiers'][self._database]
-        if identifier in self.e_plattform_data:
-            data = self.e_plattform_data[identifier]
-            data['total'] = data['2016'] + data['2017'] + data['2018']
-            self.marc.add_value_sub('hits', 'e-plattform', data)
-        else:
-            self.marc.add_value_sub('hits', 'e-plattform', {'2016': 0, '2017': 0, '2018': 0, 'total': 0})
 
+        query = {
+            '_source': ['erara-bau.*', 'emanus-bau.*', 'emanus-swa.*'],
+            'query': {
+                'term': {
+                    '_id': {
+                        'value': identifier
+                    }
+                }
+            }
+        }
+        data = dict()
+        results = self.e_plattform_data.scan_index(query=query)
+        for item in results:
+            for key in item:
+                data['e-plattform'] = item[key]
+                self.marc.add_value_sub('ŝource', 'e-plattform', key)
+
+        if len(data.keys()) == 0:
+            data['e-plattform'] = {'2016': 0, '2017': 0, '2018': 0, 'total': 0}
+        self.marc.add_value('hits', data)
 
     def parse_date(self):
         """Parsing the date from the various possible fields. Stores where the information was taken from."""

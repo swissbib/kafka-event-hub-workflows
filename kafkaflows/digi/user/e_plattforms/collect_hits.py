@@ -1,3 +1,5 @@
+from simple_elastic import ElasticIndex
+
 import os
 import re
 import json
@@ -93,18 +95,34 @@ if __name__ == '__main__':
 
     for sys_number in mapping:
         p = mapping[sys_number]['path']
-        for y in ['2016', '2017', '2018']:
-            for v in mapping[sys_number]['vlids']:
+
+        for v in mapping[sys_number]['vlids']:
+            for y in ['2016', '2017', '2018']:
                 if sys_number not in result:
                     result[sys_number] = dict()
+                if p not in result[sys_number]:
+                    result[sys_number][p] = dict()
                 if v in vlids[p][y]:
                     if y not in result[sys_number]:
-                        result[sys_number][y] = vlids[p][y][v]['page-views']
+                        result[sys_number][p][y] = vlids[p][y][v]['page-views']
                     else:
-                        result[sys_number][y] += vlids[p][y][v]['page-views']
+                        result[sys_number][p][y] += vlids[p][y][v]['page-views']
                 else:
-                    if y not in result[sys_number]:
-                        result[sys_number][y] = 0
+                    if y not in result[sys_number][p]:
+                        result[sys_number][p][y] = 0
+
+    elastic_data = list()
+    for sys_number in result:
+        item = result[sys_number]
+        total = 0
+        for year in item[list(item.keys())[0]]:
+            total += item[list(item.keys())[0]][year]
+        item['total'] = sys_number
+        item['identifier'] = sys_number
+        elastic_data.append(item)
+
+    index = ElasticIndex('e-data', 'hits')
+    index.bulk(elastic_data, 'identifier')
 
     with open('data/collected-hits-e-plattforms.json', 'w') as fp:
         json.dump(result, fp, ensure_ascii=False, indent='    ')
