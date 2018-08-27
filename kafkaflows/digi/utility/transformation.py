@@ -430,7 +430,6 @@ class TransformSruExport(DataTransformation):
             for key in item:
                 if key in ['emanus-bau', 'emanus-swa', 'erara-bau']:
                     item[key]['total'] = item['total']
-                    del item['total']
                     data['e-plattform'] = item[key]
                     self.marc.add_value_sub('ŝource', 'e-plattform', key)
 
