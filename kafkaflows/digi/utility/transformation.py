@@ -430,12 +430,12 @@ class TransformSruExport(DataTransformation):
             for key in item:
                 if key in ['emanus-bau', 'emanus-swa', 'erara-bau']:
                     item[key]['total'] = item['total']
-                    data['e-plattform'] = item[key]
-                    self.marc.add_value_sub('ŝource', 'e-plattform', key)
+                    data[key] = item[key]
 
-        if len(data.keys()) == 0:
-            data['e-plattform'] = {'2016': 0, '2017': 0, '2018': 0, 'total': 0}
-        self.marc.add_value('hits', data)
+        for key in ['emanus-bau', 'emanus-swa', 'erara-bau']:
+            if key not in data:
+                data[key] = {'2016': 0, '2017': 0, '2018': 0, 'total': 0}
+        self.marc.add_value_sub('hits', 'e-plattform', data)
 
     def parse_date(self):
         """Parsing the date from the various possible fields. Stores where the information was taken from."""
