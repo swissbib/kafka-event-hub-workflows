@@ -256,9 +256,10 @@ class TransformSruExport(DataTransformation):
         self.marc.add_value('database', self._database)
         self.marc.identifier()
 
-        if self.marc['024'] is not None:
-            if self.marc['024']['a'] is not None:
-                self.marc.add_identifier('doi', self.marc['024']['a'])
+        for field in self.marc.get_fields('024'):
+            if field.indicator1 == '7':
+                if 'a' in field and '2' in field:
+                    self.marc.add_identifier(field['2'], field['a'])
 
         self.marc.add_identifier('swissbib', self.marc['001'].value())
 
