@@ -27,7 +27,8 @@ try:
     elif args.script == 'dsv05-producer':
         run_dsv05_producer(config)
     elif args.script == 'dsv01-producer':
-        # run_dsv01_producer(config)
+        run_dsv01_producer(config)
+    elif args.script == 'dsv01-producer-full':
         run_general_dsv01_a100_producer(config)
         run_general_dsv01_a125_producer(config)
     elif args.script == 'dsv01-consumer':
