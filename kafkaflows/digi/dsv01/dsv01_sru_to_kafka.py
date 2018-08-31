@@ -1,17 +1,17 @@
 from kafka_event_hub.producers import SRUProducer
 import logging
+import json
 
 
 def run_dsv01_producer(config):
     with open('data/dsv01_system_numbers.json', 'r') as file:
         producer = SRUProducer(config['producer.path'])
-        for line in file:
-            year, sys_number = line.split(',')
-            while len(sys_number) != 10:
+        sys_numbers = json.load(file)
+        for sys_number in sys_numbers:
+            while len(sys_number) < 10:
                 sys_number = '0' + sys_number
-            if sys_number != '000013825':
-                producer.set_query_anywhere_equal_with('IDSBB' + sys_number)
-                producer.process()
+            producer.set_query_anywhere_equal_with('IDSBB' + sys_number)
+            producer.process()
 
 
 def run_general_dsv01_a100_producer(config):
