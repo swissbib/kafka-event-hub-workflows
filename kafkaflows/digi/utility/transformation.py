@@ -824,8 +824,9 @@ class TransformSruExport(DataTransformation):
             call_number = self.marc.result['call_number'][0]
         else:
             for call_n in self.marc.result['call_number']:
-                if call_n.startswith('UBH'):
-                    call_number = call_n
+                if call_n is not None:
+                    if call_n.startswith('UBH'):
+                        call_number = call_n
 
         call_number = re.sub('\s+', ' ', call_number.strip())
 
