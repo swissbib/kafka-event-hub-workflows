@@ -6,7 +6,7 @@ Producer:
   bootstrap.servers: sb-uka1.swissbib.unibas.ch:9092,sb-uka2.swissbib.unibas.ch:9092
   # debug: all
 Topic:
-  topic: sru_jsonmarc_dsv05
+  topic: sru_jsonmarc_dsv05_v2
   num_partitions: 1
   replication_factor: 1
 SRU:

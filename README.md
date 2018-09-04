@@ -9,4 +9,4 @@ sub-folder.
 Current Structure:
 
 - kafkaflows (Kafka Event Hub Workflows)
-  - [digi]() (Project Digitale Nutzung)
+  - [digi](/kafkaflows/digi/README.md) (Project Digitale Nutzung)
