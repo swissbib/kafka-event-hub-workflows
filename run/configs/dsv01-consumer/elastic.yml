@@ -10,9 +10,9 @@ Consumer:
   # debug: all
 Topic:
   topics:
-    - sru_jsonmarc_dsv01
+    - sru_jsonmarc_dsv01_v2
 Elastic:
-  index: kafka-dsv01-v6
+  index: kafka-dsv01-v7
   doc_type: record
   url: http://sb-ues2.swissbib.unibas.ch:9200
   timeout: 300
