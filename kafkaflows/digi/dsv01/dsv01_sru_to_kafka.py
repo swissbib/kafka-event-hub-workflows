@@ -8,7 +8,7 @@ def run_dsv01_producer(config):
         producer = SRUProducer(config['producer.path'])
         sys_numbers = json.load(file)
         for sys_number in sys_numbers:
-            while len(sys_number) < 10:
+            while len(sys_number) < 9:
                 sys_number = '0' + sys_number
             producer.set_query_anywhere_equal_with('IDSBB' + sys_number)
             producer.process()
