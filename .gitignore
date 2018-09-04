@@ -1,5 +1,5 @@
 .idea/
-*.txt
+kafkaflows/digi/user-data/opac/data/VERZ_DSV01_Vollanzeige.txt
 
 
 # Byte-compiled / optimized / DLL files
