@@ -7,6 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from kafkaflows.digi.dsv01 import run_dsv01_producer, run_general_dsv01_a100_producer, run_general_dsv01_a125_producer, run_dsv01_consumer
 from kafkaflows.digi.dsv05 import run_dsv05_consumer, run_dsv05_producer, run_dsv05_producer_pre_compiled_list
 from kafkaflows.digi.digispace import run_digispace_kafka_to_result, run_digispace_to_kafka
+from kafkaflows.digi.user_data import enrich
 
 parser = argparse.ArgumentParser(description='CLI for Kafka Workflows')
 parser.add_argument('script', action='store')
@@ -37,6 +38,8 @@ try:
         run_digispace_to_kafka(config)
     elif args.script == 'digispace-consumer':
         run_digispace_kafka_to_result(config)
+    elif args.script == 'enrich':
+        enrich()
 except Exception as e:
     logging.exception(e)
     sys.exit(1)

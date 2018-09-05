@@ -2,7 +2,7 @@ from simple_elastic import ElasticIndex
 from kafkaflows.digi.user_data import swissbib, aleph, e_plattforms, opac
 
 
-if __name__ == '__main__':
+def enrich():
     index = ElasticIndex('kafka*', 'record', url='http://sb-ues2.swissbib.unibas.ch:9200')
 
     for results in index.scroll():
