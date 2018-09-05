@@ -5,7 +5,7 @@ from kafkaflows.digi.user_data import swissbib, aleph, e_plattforms, opac
 def enrich_user_data(config):
 
     for index in config['indexes']:
-        instance = ElasticIndex(**index)
+        instance = ElasticIndex(**index['index'])
 
         for results in instance.scroll():
             for item in results:
