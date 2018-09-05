@@ -1,2 +1,2 @@
-from kafkaflows.digi.dsv05.dsv05_kafka_to_elastic import run_dsv05_consumer
-from kafkaflows.digi.dsv05.dsv05_sru_to_kafka import run_dsv05_producer, run_dsv05_producer_pre_compiled_list
+from kafkaflows.digi.dsv05.dsv05_kafka_to_elastic import dsv05_consumer
+from kafkaflows.digi.dsv05.dsv05_sru_to_kafka import dsv05_producer_full, dsv05_producer

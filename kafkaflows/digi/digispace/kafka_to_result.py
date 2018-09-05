@@ -39,7 +39,7 @@ class Transformation(DataTransformation):
         return result
 
 
-def run_digispace_kafka_to_result(config):
+def digispace_consumer(config):
     logging.debug('Create digidata elastic index.')
     consumer = ElasticConsumer(config['consumer.path'], transformation_class=Transformation)
     while True:

@@ -1,1 +1,1 @@
-from kafkaflows.digi.user_data.enrichment import enrich
+from kafkaflows.digi.user_data.enrichment import enrich_user_data

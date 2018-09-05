@@ -2,7 +2,7 @@ from kafka_event_hub.producers import SRUProducer
 import json
 
 
-def run_dsv01_producer(config):
+def dsv01_producer(config):
     with open('data/dsv01_system_numbers.json', 'r') as file:
         producer = SRUProducer(config['producer.path'])
         sys_numbers = json.load(file)
@@ -11,6 +11,11 @@ def run_dsv01_producer(config):
                 sys_number = '0' + sys_number
             producer.set_query_anywhere_equal_with('IDSBB' + sys_number)
             producer.process()
+
+            
+def dsv01_producer_full(config):
+    run_general_dsv01_a100_producer(config)
+    run_general_dsv01_a125_producer(config)
 
 
 def run_general_dsv01_a100_producer(config):

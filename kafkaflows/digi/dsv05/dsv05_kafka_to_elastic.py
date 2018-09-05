@@ -4,7 +4,7 @@ from kafkaflows.digi.utility.transformation import TransformSruExport
 import logging
 
 
-def run_dsv05_consumer(config):
+def dsv05_consumer(config):
     logger = logging.getLogger(__name__)
     consumer = ElasticConsumer(config['consumer.path'], TransformSruExport, logger)
     while True:
