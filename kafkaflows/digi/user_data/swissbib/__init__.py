@@ -30,4 +30,4 @@ def enrich(system_number: str) -> Tuple[Dict[str, Dict[str, int]], Union[List[st
             total += num
 
     hits['total'] = total
-    return hits, None
+    return hits, []

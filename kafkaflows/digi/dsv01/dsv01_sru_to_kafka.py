@@ -1,5 +1,4 @@
 from kafka_event_hub.producers import SRUProducer
-import logging
 import json
 
 
