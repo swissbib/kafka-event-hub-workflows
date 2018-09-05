@@ -1,0 +1,3 @@
+logging:
+  # 10: debug, 20: info, 30: warning, 40:error
+  level: 10
