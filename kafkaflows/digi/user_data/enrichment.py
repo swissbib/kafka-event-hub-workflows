@@ -32,11 +32,11 @@ def enrich_user_data(config):
                 total += hits['total']
                 error_tags_list.extend(error_tags)
 
-                # aleph
-                # hits, error_tags = aleph.enrich(sys_number, database)
-                # document['hits']['aleph'] = hits
-                # total += hits['total']
-                # error_tags_list.extend(error_tags)
+                aleph
+                hits, error_tags = aleph.enrich(sys_number, database)
+                document['hits']['aleph'] = hits
+                total += hits['total']
+                error_tags_list.extend(error_tags)
 
                 # e-plattforms
                 # hits, error_tags = e_rara.enrich(sys_number, database)

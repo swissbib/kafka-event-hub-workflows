@@ -8,6 +8,7 @@ swissbib_host = 'http://sb-uesl1.swissbib.unibas.ch:8080'
 def enrich(system_number: str) -> Tuple[Dict[str, Dict[str, int]], Union[List[str], None]]:
     total = 0
     hits = dict()
+    total_sub = 0
     for year in range(2018, 2019):
         sru = ElasticIndex('sru-{}'.format(year), doc_type='logs',
                            url=swissbib_host)
@@ -16,9 +17,12 @@ def enrich(system_number: str) -> Tuple[Dict[str, Dict[str, int]], Union[List[st
         num = len(sru.scan_index(query=query))
         hits['sru'][str(year)] = num
         total += num
+        total_sub += num
+    hits['sru']['total'] = total_sub
 
     for source in ['green', 'jus', 'bb']:
         hits[source] = dict()
+        total_sub = 0
         for year in range(2017, 2019):
             swissbib = ElasticIndex('swissbib-{}-{}'.format(source, year),
                                     doc_type='logs',
@@ -28,6 +32,8 @@ def enrich(system_number: str) -> Tuple[Dict[str, Dict[str, int]], Union[List[st
             num = len(swissbib.scan_index(query=query))
             hits[source][str(year)] = num
             total += num
+            total_sub += num
+        hits[source]['total'] = total_sub
 
     hits['total'] = total
     return hits, []
