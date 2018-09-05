@@ -1,36 +1,23 @@
 ## Projekt: Datensammlung zum Bestand & Nutzung von Titeln älter als 1920
 
+Das Projekt hat die folgenden Ziele:
 
+ - Sammlung & Visualiserung des aktuellen Bestandes
+ - Visualisierung des Standes der Digitalisierung im Bestand.
+ - Analyse der Nutzung der Digitaliste. . 
+ - Anaylse der Suche und Ausleihe in den Katalogen.
  
-This project has the following goals:
+Der erste Schritt dazu war das sammeln, normalisieren und aggregieren der
+bibliografischen Metadaten. Diese Metadaten werden zentral von der 
+[SRU Schnittstelle](https://sru.swissbib.ch) geholt und zuerst einmal 
+in Kafka Event Hub zwischengelagert.
 
-- Visualize the current inventory and archives of items 
-published before 1920.
-- Visualize the current status of what is digitized of 
-this inventory.
-- Analyse the usage of these digitized items on the 
-publishing plattforms.
-- Analyse what items of the inventory are searched, 
-consulted or loaned.
-  - To this end, the inventory should be categorized 
-  by format and century. 
+Das Inventar der Universitätsbibliothek ist primär in zwei verschiedenen Datenbanken 
+katalogisiert (dsv01 & dsv05). Zwischen den Datenbanken gibt es unterschiede wie 
+die Katalogisate erstellt werden (RDA vs. Eigenes). Deshalb gibt es einen eigenen Workflow für 
+beide Datenbanken.
 
-The first step is to collect, normalize and aggregate the 
-bibliographic data of the inventory. The collection of 
-bibliographic happens from sru.swissbib.ch, which offers a 
-public SRU API. The API returns MARC JSON records. These 
-records are then stored inside a Kafka topic as is.
 
-Since the inventory of the University Library Basel is 
-separated into two databases: dsv01 and dsv05.
-The first is the main database with the majority of bibliographic records
-and associated items. The second is primarily used for archival
-items which cannot be taken home. There are some differences
-on how bibliographic records are catalogued and how they are 
-managed.
-
-This leads to the separation of the work-flows to collect
-the data on each of these databases. 
 
 The Kafka consumer filters, transforms and enriches the data
 collected and then indexes it into a elasticsearch cluster.
