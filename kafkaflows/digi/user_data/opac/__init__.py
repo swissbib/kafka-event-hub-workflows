@@ -21,4 +21,4 @@ def enrich(system_number: str) -> Tuple[Dict[str, Dict[str, int]], Union[List[st
     if identifier < 320000:
         return {'opac-access': {'total': hits}}, ['_potential_dual_hit']
     else:
-        return {'opac-access': {'total': hits}}, None
+        return {'opac-access': {'total': hits}}, []
