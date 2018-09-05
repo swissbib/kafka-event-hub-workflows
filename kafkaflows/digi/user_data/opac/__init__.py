@@ -4,7 +4,7 @@ from typing import Dict, Tuple, Union, List
 opac_host = 'http://sb-ues2.swissbib.unibas.ch:9200'
 
 
-def enrich(system_number: str) -> Tuple[Dict[str, Dict[str, int]], Union[List[str], None]]:
+def enrich(system_number: str) -> Tuple[Dict[str, int], Union[List[str], None]]:
     index = ElasticIndex('opac-access', 'log', url=opac_host)
 
     query = {
@@ -19,6 +19,6 @@ def enrich(system_number: str) -> Tuple[Dict[str, Dict[str, int]], Union[List[st
     hits = len(index.scan_index(query=query))
     identifier = int(system_number)
     if identifier < 320000:
-        return {'opac-access': {'total': hits}}, ['_potential_dual_hit']
+        return {'total': hits}, ['_opac_dual_hit']
     else:
-        return {'opac-access': {'total': hits}}, []
+        return {'total': hits}, []
