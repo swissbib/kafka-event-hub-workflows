@@ -5,7 +5,7 @@ import requests
 
 
 e_codices_doi_prefix = '10.5076/e-codices-ubb-{}'
-ubb_page_stem = re.compile('/ubb/(([A-Za-z]{1,2}-[IVXivx]+-)?([0-9]{4}[^0].*?))(\?|&|/|$)')
+ubb_page_stem = re.compile('/ubb/(([A-Za-z]{1,2}-[IVXivx]+-)?([0][0-9]{3}.*?))(\?|&|/|$)')
 
 
 def read_file(file_name: str):
