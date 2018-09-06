@@ -5,7 +5,7 @@ import requests
 
 
 e_codices_doi_prefix = '10.5076/e-codices-ubb-{}'
-ubb_page_stem = re.compile('/ubb/(([A-Za-z]{1,2}-[IVXivx]+-)?([0-9]{4}.*?))(\?|&|/|$)')
+ubb_page_stem = re.compile('/ubb/(([A-Za-z]{1,2}-[IVXivx]+-)?([0-9]{4}[^0].*?))(\?|&|/|$)')
 
 
 def read_file(file_name: str):
@@ -23,14 +23,29 @@ def transform_call_number(call_number: str) -> str:
         result += parts.group(3).replace('0', '')
 
     if parts.group(4):
-        print(parts.group(4))
+        if re.fullmatch('[a-z]', parts.group(4)):
+            result += parts.group(4)
+        else:
+            result += ':' + parts.group(4).strip('-')
+    if result == 'BC II 5':
+        result = 'Bc II 5'
+    elif result == 'LE VI 12':
+        result = 'Le VI 12 Einband'
+    elif result == 'N I 3:13-15':
+        result = 'N I 3:13 + 15'
+    elif result == 'N I 6:67':
+        result = result + 'a+b'
+    elif result == 'N I 6:71':
+        result = result + 'a+b'
+    elif result == 'N I 1:3ab':
+        result = 'N I 1:3a+b'
     return result
 
 
 if __name__ == '__main__':
     data = dict()
     for year in range(2012, 2019):
-        data[str(year)] = read_file('data/e-codices/output-{}-01-01-{}-12-31.json'.format(year, year))
+        data[str(year)] = read_file('data/output-{}-01-01-{}-12-31.json'.format(year, year))
 
     call_numbers_encoded = set()
     collect_stems = dict()
@@ -54,9 +69,14 @@ if __name__ == '__main__':
 
     for key in collect_stems:
         total = 0
-        for year in collect_stems[key]:
-            total += collect_stems[key][year]
+        for year in range(2012, 2019):
+            if str(year) in collect_stems[key]:
+                total += collect_stems[key][str(year)]
+            else:
+                collect_stems[key][str(year)] = 0
         collect_stems[key]['total'] = total
+
+    dois = dict()
 
     accepted_dois = list()
     rejected_dois = list()
@@ -65,37 +85,52 @@ if __name__ == '__main__':
         response = requests.get('https://doi.org/{}'.format(doi))
         if response.ok:
             accepted_dois.append(doi)
+            dois[item] = doi
         else:
             rejected_dois.append(doi)
 
-    with open('accepted-dois.json', 'w') as fp:
+    with open('suppl/accepted-dois.json', 'w') as fp:
         json.dump(accepted_dois, fp, indent=4, ensure_ascii=False)
 
-    with open('rejected-dois.json', 'w') as fp:
+    with open('suppl/rejected-dois.json', 'w') as fp:
         json.dump(rejected_dois, fp, indent=4, ensure_ascii=False)
 
-    with open('call-numbers.json', 'w') as fp:
+    with open('suppl/call-numbers.json', 'w') as fp:
         json.dump(sorted(list(call_numbers_encoded)), fp, indent=4, ensure_ascii=False)
 
-    with open('output.json', 'w') as fp:
+    with open('suppl/output.json', 'w') as fp:
         json.dump(collect_stems, fp, indent=2, ensure_ascii=False)
-
-    # index = ElasticIndex('kafka-dsv05-*', 'record')
+    target = ElasticIndex('e-codices-data', 'hits')
+    index = ElasticIndex('kafka-dsv05-*', 'record')
     for key in collect_stems:
         if key == '0001':
             # TODO: A combined manuscript.
             continue
-        transformed = transform_call_number(key)
 
+        item = dict()
+
+        cn = transform_call_number(key)
         query = {
+            '_source': ['call_number', 'identifiers.*'],
             'query': {
                 'term': {
-                    'call_number.keyword': ''
+                    'call_number.keyword': cn
                 }
             }
         }
 
-       # index.scan_index()
+        results = index.scan_index(query=query)
+
+        if len(results) == 1:
+            result = results[0]
+            item['hits'] = collect_stems[key]
+            if 'doi' not in result['identifiers']:
+                if key in dois:
+                    item['doi'] = dois[key]
+
+            target.index_into(item, result['identifiers']['dsv05'])
+        else:
+            print(key, cn, results)
 
 
 
