@@ -113,11 +113,13 @@ if __name__ == '__main__':
 
     elastic_data = list()
     for sys_number in result:
-        item = result[sys_number]
+        item = dict()
+        item['bau'] = dict()
         total = 0
-        for year in item[list(item.keys())[0]]:
-            total += item[list(item.keys())[0]][year]
-        item['total'] = total
+        for y in result[sys_number]['erara-bau']:
+            item['bau'][y] = result[sys_number]['erara-bau'][y]
+            total += item['bau'][y]
+        item['bau']['total'] = total
         item['identifier'] = sys_number
         elastic_data.append(item)
 

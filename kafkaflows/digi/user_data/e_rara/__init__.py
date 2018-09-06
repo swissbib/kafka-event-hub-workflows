@@ -4,10 +4,11 @@ from typing import Dict, Tuple, Union, List
 e_data_host = 'http://sb-ues2.swissbib.unibas.ch:9200'
 
 
-def enrich(system_number: str) -> Tuple[Dict[str, int], Union[List[str], None]]:
-    index = ElasticIndex('opac-access', 'log', url=opac_host)
+def enrich(system_number: str) -> Tuple[Dict[str, Dict[str, int]], Union[List[str], None]]:
+    index = ElasticIndex('e-rara-data', 'log', url=e_data_host)
 
     query = {
+            '_source': ['bau.*'],
             'query': {
                 'term': {
                     'system_number': {
@@ -16,9 +17,5 @@ def enrich(system_number: str) -> Tuple[Dict[str, int], Union[List[str], None]]:
                 }
             }
         }
-    hits = len(index.scan_index(query=query))
-    identifier = int(system_number)
-    if identifier < 320000:
-        return {'total': hits}, ['_opac_dual_hit']
-    else:
-        return {'total': hits}, []
+    hits = index.scan_index(query=query)[0]
+    return hits, []

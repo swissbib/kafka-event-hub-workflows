@@ -1,5 +1,5 @@
 from simple_elastic import ElasticIndex
-from kafkaflows.digi.user_data import swissbib, aleph, e_plattforms, opac
+from kafkaflows.digi.user_data import swissbib, aleph, e_codices, e_manuscripta, e_rara, opac
 
 
 def enrich_user_data(config):
@@ -32,17 +32,17 @@ def enrich_user_data(config):
                 total += hits['total']
                 error_tags_list.extend(error_tags)
 
-                aleph
+                # aleph
                 hits, error_tags = aleph.enrich(sys_number, database)
                 document['hits']['aleph'] = hits
-                total += hits['total']
+                total += hits['loans']['total']
                 error_tags_list.extend(error_tags)
 
-                # e-plattforms
-                # hits, error_tags = e_rara.enrich(sys_number, database)
-                # document['hits']['e-rara'] = hits
-                # total += hits['total']
-                # error_tags_list.extend(error_tags)
+                # e-rara
+                hits, error_tags = e_rara.enrich(sys_number)
+                document['hits']['e-rara'] = hits
+                total += hits['bau']['total']
+                error_tags_list.extend(error_tags)
 
                 document['hits']['total'] = total
 
