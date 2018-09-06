@@ -113,14 +113,20 @@ if __name__ == '__main__':
 
     elastic_data = list()
     for sys_number in result:
-        item = result[sys_number]
+        if 'emanus-bau' in result[sys_number]:
+            name = 'emanus-bau'
+        else:
+            name = 'emanus-swa'
+        item = dict()
+        item[name.split('-')[1]] = dict()
         total = 0
-        for year in item[list(item.keys())[0]]:
-            total += item[list(item.keys())[0]][year]
-        item['total'] = total
+        for y in result[sys_number][name]:
+            item[name.split('-')[1]][y] = result[sys_number][name][y]
+            total += item[name.split('-')[1]][y]
+        item[name.split('-')[1]]['total'] = total
         item['identifier'] = sys_number
         elastic_data.append(item)
 
-    index = ElasticIndex('e-emanuscripta-data', 'hits')
+    index = ElasticIndex('e-manuscripta-data', 'hits')
     index.bulk(elastic_data, 'identifier')
 
