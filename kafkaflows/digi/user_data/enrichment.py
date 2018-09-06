@@ -44,6 +44,19 @@ def enrich_user_data(config):
                 total += hits['bau']['total']
                 error_tags_list.extend(error_tags)
 
+                # e-manuscripta
+                hits, error_tags = e_rara.enrich(sys_number)
+                document['hits']['e-manuscripta'] = hits
+                total += hits['bau']['total']
+                total += hits['swa']['total']
+                error_tags_list.extend(error_tags)
+
+                # e-codices
+                # TODO
+
+                # e-mails dsv05
+                # TODO
+
                 document['hits']['total'] = total
 
                 instance.update(document, doc_id=identifier)
