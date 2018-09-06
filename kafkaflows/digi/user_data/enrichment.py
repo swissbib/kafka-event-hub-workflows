@@ -45,14 +45,22 @@ def enrich_user_data(config):
                 error_tags_list.extend(error_tags)
 
                 # e-manuscripta
-                hits, error_tags = e_rara.enrich(sys_number)
+                hits, error_tags = e_manuscripta.enrich(sys_number)
                 document['hits']['e-manuscripta'] = hits
                 total += hits['bau']['total']
                 total += hits['swa']['total']
                 error_tags_list.extend(error_tags)
 
                 # e-codices
-                # TODO
+                hits, doi, error_tags = e_codices.enrich(sys_number)
+                document['hits']['e-codices'] = hits
+                total += hits['total']
+                error_tags_list.extend(error_tags)
+
+                if doi is not None:
+                    instance.script_update("ctx._source.identifiers.doi = '{}'".format(doi),
+                                           params={},
+                                           doc_id=identifier)
 
                 # e-mails dsv05
                 # TODO
