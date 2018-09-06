@@ -42,35 +42,35 @@ und die Systemnummer der Aufgerufenen Seite enthält. Jeder dieser Einträge ent
 Das Problem an dieser Systemnummer ist, dass diese sowohl von DSV01 als auch DSV05 stammen könnte. Dies wird aktuell ignoriert und der Wert wird beiden Systemnummern zugewiesen sofern es aus beiden kommt.
 
 #### Swissbib Access Logs (ELK-Stack)
-#### e-codices Google Analytics Reports (jährlich)
-#### e-rara & e-manuscripta Angelfish Reports (jährlich)
-#### dsv05 Ausleihen & Reservationen (ARC-Statistik Tool)
+Diese Daten kommen direkt aus dem ELK-Stack und werden summiert nach Jahr. 
 
+#### e-codices Google Analytics Reports (jährlich) (noch nicht integriert/implementiert)
+Diese Daten können direkt übder die Google Analytics Reporting v4 API geholt. Es liegt ein Report pro Seite & Jahr vor.
+Die könnte einfach verfeinert werden (z.B. pro Monat), aber da andere Datenquellen ebenfalls nur pro Jahr vorhanden sind würde das aktuell nicht so viel Sinn machen. 
+
+Diese Daten liegen seit Beginn von e-codices 2012 vor, je nachdem wie lange die Digitalisate dort waren.
+
+Einige Digitalisate wurden von e-codices entfernt und auf e-manuscripta verschoben (Hochschulpolitischer Entscheid, hat aber zur Folge, dass bei ein paar Einträge die e-codices dois nicht mehr funkionieren und doppelt Einträge zu den Nutzerdaten vorhanden sind.)
+#### e-rara & e-manuscripta Angelfish Reports (jährlich)
+Werden direkt bereitgestellt nach Jahr & Pageviews. Müssen stark bereinigt und kombiniert werden, da die Seiten nur als VLID
+verlinkung vorhanden sind. Es gibt ein mapping zwischen Systemnummer und VLID aber nur für die Titelseiten. Die restlichen wurden einfach in numerischer Reihenfolge angenommen (das heisst, eine VLID ohne mapping wurde der nächst kleineren VLID mit mapping angefügt, Stichprobenmässig scheint dies eine gute Annahme zu sein).
+
+#### dsv01 Ausleihen & Reservationen (ARC-Statistik Tool)
+Diese Daten werden direkt aus Aleph gelesen und liegen vn 2016 - 2018 pro Jahr vor. ARC-Reports könnte man automatisieren.
+
+#### dsv05 Ausleihen (Webformular / E-mail) (noch nicht integriert/implementiert)
+Es existieren E-Mails für die Ausleihen in dsv05 (2304 Stück, 2016 - 2018) welche einen Teil der Ausleihen in DSV05 abbilden.
 
 ## Datenmodel
+Das verwendete Datenmodel ist sehr einfach gestrickt und resultiert aus den vorhandenen Daten und Anforderungen des Projektes.
 
+Die Basisklasse des Models ist ein Titel. Jeder Titel hat einen Eintrag im swissbib Index. Hinter einem Titel kann sich alles
+Mögliche verstecken:
 
-Information on loans and reservations come from the ALEPH 
-statistics tool ARC. For now just a one time dump, but this 
-may be automated in the future (might not be worth it, until
-the migration to ALMA has been completed)
+- Ein einzelnes Foto
+- ein paar lose Blätter
+- ein gebundenes Buch
+- eine ganze Zeitung
 
-The opac sub-module deals with the aggregation of Apache access
-logs of the library's old web-catalogue, which is still in use.
-Each click on a records title and other pages, generates a single
-request where the system number is visible. These are 
-collected and indexed in elasticsearch as well.
-
-
-Nutzungsanalyse:
-
-Was ist da:
-OPAC Access Hits 2016 - 08.2018
-Swissbib (green, orange, jus & sru) 12.2017 - present
-Ausleihen + Reservationen im dsv01
-
-
-Was fehlt:
-Kopieraufträge
-Ausleihen dsv05
-Fernleihen
+Worum es sich handelt kann i.d.R. am Format der Instanz definiert werden. Dies kann aber nicht garantiert werden. Dies ist 
+wichtig um die Anzahl Seiten schätzen zu können falls diese nicht in den Daten vorhanden ist.
