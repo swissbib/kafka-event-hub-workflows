@@ -11,7 +11,7 @@ def enrich(system_number: str) -> Tuple[Dict[str, int], Union[str, None], Union[
             '_source': ['hits.*', 'doi'],
             'query': {
                 'term': {
-                    'system_number': {
+                    '_id': {
                         'value': system_number
                     }
                 }
