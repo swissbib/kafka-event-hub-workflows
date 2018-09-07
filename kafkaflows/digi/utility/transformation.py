@@ -244,10 +244,6 @@ class TransformSruExport(DataTransformation):
         self._config = config
         self.marc = None
         self.digidata_index = ElasticIndex(**config['digidata'])
-        self.swissbib_elk_host = config['swissbib.host']
-        self.opac = ElasticIndex(**config['opac'])
-        self.aleph = ElasticIndex(**config['aleph'])
-        self.e_plattform_data = ElasticIndex(**config['e-data'])
         self.page_conversion_rates = config['page-conversions']
 
     def transform(self, value: str) -> dict:
@@ -285,15 +281,11 @@ class TransformSruExport(DataTransformation):
         return self.marc.result
 
     def enrich(self):
-        """Enriching the message from other data sources."""
+        """Enriching the metadata from other data sources."""
         self.enrich_digidata()
-        self.enrich_swissbib_hits()
-        self.enrich_opac_hits()
-        self.enrich_loans_and_reservations()
-        self.enrich_e_plattform_data()
 
     def enrich_digidata(self):
-        """Loads data from the digidata elastic repository.
+        """Loads data from the digidata elastic index.
 
         No live updates, as the digidata repository is on Afrikaportal-elastic,
         which is only on localhost accessible. To update run the digispace-producer & digispace-consumer.
@@ -313,130 +305,6 @@ class TransformSruExport(DataTransformation):
                 self.marc.add_value('number_of_images', result[0]['number_of_images'])
         else:
             self.marc.add_value('is_digitized', False)
-
-    def enrich_swissbib_hits(self):
-        """Add the hits from swissbib on a yearly basis.
-
-        TODO: Maybe load by month?
-        """
-        identifier = self.marc.result['identifier']
-
-        total = 0
-        hits = dict()
-        for year in range(2018, 2019):
-            sru = ElasticIndex('sru-{}'.format(year), doc_type='logs',
-                               url=self.swissbib_elk_host)
-            hits['sru'] = dict()
-            query = {'query': {'match': {'requestparams': identifier}}}
-            num = len(sru.scan_index(query=query))
-            hits['sru'][str(year)] = num
-            total += num
-
-        for source in ['green', 'jus', 'bb']:
-            hits[source] = dict()
-            for year in range(2017, 2019):
-                swissbib = ElasticIndex('swissbib-{}-{}'.format(source, year),
-                                        doc_type='logs',
-                                        url=self.swissbib_elk_host)
-
-                query = {'query': {'term': {'request_middle.keyword': {'value': identifier}}}}
-                num = len(swissbib.scan_index(query=query))
-                hits[source][str(year)] = num
-                total += num
-
-        hits['total'] = total
-        self.marc.add_value_sub('hits', 'swissbib', hits)
-
-    def enrich_opac_hits(self):
-        """Adds opac-access hits to data.
-
-        IMPORTANT: The opac messages do not distinguish between dsv01 and dsv05 system numbers.
-        This makes it impossible to figure out which one it is.
-
-        IMPLEMENTED WORKAROUND:
-        - If the system number is higher than 320'000 it is dsv01
-        - If the system number is blow 320'000 it is more likely in dsv05
-        As such opac its below 320'000 are always attributed to dsv05
-
-        TODO: Implement a better distinction between databases.
-        TODO: Implement opac access numbers per year/month
-        """
-        query = {
-            'query': {
-                'term': {
-                    'system_number': {
-                        'value': self.marc.result['identifiers'][self._database]
-                    }
-                }
-            }
-        }
-        hits = len(self.opac.scan_index(query=query))
-        identifier = int(self.marc.result['identifiers'][self._database])
-        if identifier > 320000 and self._database == 'dsv01':
-            self.marc.add_value_sub('hits', 'opac-access', {'total': hits})
-        elif identifier <= 320000 and self._database == 'dsv05':
-            self.marc.add_value_sub('hits', 'opac-access', {'total': hits})
-        elif identifier <= 320000 and self._database == 'dsv01':
-            self.marc.add_value_sub('hits', 'opac-access', {'total': hits})
-            self.marc.add_error_tag('_maybe_dsv05_hits')
-
-    def enrich_loans_and_reservations(self):
-        """Gets the number of loans and reservations from an elastic index.
-
-        Only used for dsv01 currently as dsv05 data is not available.
-
-        TODO: Get dsv05 data.
-        """
-        placeholder = {
-            'reservations': {'2016': 0, '2017': 0, '2018': 0, 'total': 0},
-            'loans': {'2016': 0, '2017': 0, '2018': 0, 'total': 0}
-        }
-        if self._database == 'dsv01':
-            query = {
-                '_source': ['reservations.*', 'loans.*'],
-                'query': {
-                    'term': {
-                        '_id': {
-                            'value': self.marc.result['identifiers'][self._database]
-                        }
-                    }
-                }
-            }
-            results = self.aleph.scan_index(query=query)
-            if len(results) == 1:
-                self.marc.add_value('hits', results[0])
-            else:
-                self.marc.add_value('hits', placeholder)
-        else:
-            # place holder values for scripted fields.
-            self.marc.add_value('hits', placeholder)
-
-    def enrich_e_plattform_data(self):
-        """Enrich the collected hits from e-plattforms (e-rara & e-manuscripta)."""
-        identifier = self.marc.result['identifiers'][self._database]
-
-        query = {
-            '_source': ['erara-bau.*', 'emanus-bau.*', 'emanus-swa.*', 'total'],
-            'query': {
-                'term': {
-                    '_id': {
-                        'value': identifier
-                    }
-                }
-            }
-        }
-        data = dict()
-        results = self.e_plattform_data.scan_index(query=query)
-        for item in results:
-            for key in item:
-                if key in ['emanus-bau', 'emanus-swa', 'erara-bau']:
-                    item[key]['total'] = item['total']
-                    data[key] = item[key]
-
-        for key in ['emanus-bau', 'emanus-swa', 'erara-bau']:
-            if key not in data:
-                data[key] = {'2016': 0, '2017': 0, '2018': 0, 'total': 0}
-        self.marc.add_value_sub('hits', 'e-plattform', data)
 
     def parse_date(self):
         """Parsing the date from the various possible fields. Stores where the information was taken from."""
