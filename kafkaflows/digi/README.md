@@ -2,11 +2,11 @@
 
 Das Projekt hat die folgenden Ziele:
 
- - Sammlung & Visualiserung des aktuellen Bestandes
- - Visualisierung des Standes der Digitalisierung im Bestand.
- - Analyse der Nutzung der Digitaliste. . 
- - Anaylse der Suche und Ausleihe in den Katalogen.
- 
+- Sammlung & Visualisierung des aktuellen Bestandes
+- Visualisierung des Standes der Digitalisierung im Bestand
+- Analyse der Nutzung der Digitalisate
+- Analyse der Suche und Ausleihe in den Katalogen
+
 Der erste Schritt dazu war das sammeln, normalisieren und aggregieren der
 bibliografischen Metadaten. Diese Metadaten werden zentral von der 
 [SRU Schnittstelle](https://sru.swissbib.ch) geholt und zuerst einmal 
