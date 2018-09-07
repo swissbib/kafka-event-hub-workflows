@@ -314,16 +314,19 @@ class TransformSruExport(DataTransformation):
             year = self.marc.result['dates']['date']['year']
             self.marc.add_value_sub('final', 'year', int(year))
             self.marc.append_value_sub('final', 'century', int(year / 100) + 1)
+            self.marc.append_value_sub('final', 'decade', year - year % 10)
             self.marc.add_value_sub('source', 'year', '008')
         elif _046_date:
             year = self.marc.result['dates']['exact']['year']
             self.marc.add_value_sub('final', 'year', int(year))
             self.marc.append_value_sub('final', 'century', int(year / 100) + 1)
+            self.marc.append_value_sub('final', 'decade', year - year % 10)
             self.marc.add_value_sub('source', 'year', '046')
         elif self.marc.parse_date_from_264():
             year = self.marc.result['dates']['parsed_264_year']
             self.marc.add_value_sub('final', 'year', int(year))
             self.marc.append_value_sub('final', 'century', int(year / 100) + 1)
+            self.marc.append_value_sub('final', 'decade', year - year % 10)
             self.marc.add_value_sub('source', 'year', '264')
         else:
             self.marc.add_value_sub('source', 'year', 'None')
