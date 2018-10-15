@@ -1,7 +1,7 @@
 from simple_elastic import ElasticIndex
 from typing import Dict, Tuple, Union, List
 
-opac_host = 'http://sb-ues2.swissbib.unibas.ch:9200'
+opac_host = 'http://localhost:9200'
 
 
 def enrich(system_number: str) -> Tuple[Dict[str, int], Union[List[str], None]]:

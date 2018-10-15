@@ -1,12 +1,12 @@
 logging:
   # 10: debug, 20: info, 30: warning, 40:error
-  level: 30
+  level: 10
 indexes:
   - index:
      index: kafka-dsv01-v7
      doc_type: record
-     url: http://sb-ues2.swissbib.unibas.ch:9200
+     url: http://localhost:9200
   - index:
       index: kafka-dsv05-v7
       doc_type: record
-      url: http://sb-ues2.swissbib.unibas.ch:9200
+      url: http://localhost:9200

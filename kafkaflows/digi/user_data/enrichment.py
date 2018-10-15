@@ -7,66 +7,79 @@ def enrich_user_data(config):
     for index in config['indexes']:
         instance = ElasticIndex(**index['index'])
 
-        for results in instance.scroll():
+        query = {
+            'query': {
+                'match_all': {}
+            }
+        }
+
+        for results in instance.scroll(query=query):
             for item in results:
-                document = dict()
                 identifier = item['identifier']
                 database = item['database']
                 sys_number = item['identifiers'][database]
 
-                total = 0
-                document['hits'] = dict()
-                error_tags_list = list()
+                if 'error_tags' in item:
+                    item['error_tags'] = set(item['error_tags'])
 
-                instance.script_update("ctx._source.remove('hits')", dict(), doc_id=identifier)
+                total = 0
 
                 # swissbib
                 hits, error_tags = swissbib.enrich(identifier)
-                document['hits']['swissbib'] = hits
+                item['hits']['swissbib'] = hits
                 total += hits['total']
-                error_tags_list.extend(error_tags)
+                for tag in error_tags:
+                    item['error_tags'].add(tag)
 
                 # opac
                 hits, error_tags = opac.enrich(sys_number)
-                document['hits']['opac-access'] = hits
+                item['hits']['opac-access'] = hits
                 total += hits['total']
-                error_tags_list.extend(error_tags)
+                for tag in error_tags:
+                    item['error_tags'].add(tag)
 
                 # aleph
                 hits, error_tags = aleph.enrich(sys_number, database)
-                document['hits']['aleph'] = hits
+                item['hits']['aleph'] = hits
                 total += hits['loans']['total']
-                error_tags_list.extend(error_tags)
+                for tag in error_tags:
+                    item['error_tags'].add(tag)
 
-                # e-rara
-                hits, error_tags = e_rara.enrich(sys_number)
-                document['hits']['e-rara'] = hits
-                total += hits['bau']['total']
-                error_tags_list.extend(error_tags)
+                if database == 'dsv05':
+                    # e-rara
+                    hits, error_tags = e_rara.enrich(sys_number)
+                    item['hits']['e-rara'] = hits
+                    total += hits['bau']['total']
+                    for tag in error_tags:
+                        item['error_tags'].add(tag)
 
-                # e-manuscripta
-                hits, error_tags = e_manuscripta.enrich(sys_number)
-                document['hits']['e-manuscripta'] = hits
-                total += hits['bau']['total']
-                total += hits['swa']['total']
-                error_tags_list.extend(error_tags)
+                    # e-manuscripta
+                    hits, error_tags = e_manuscripta.enrich(sys_number)
+                    item['hits']['e-manuscripta'] = hits
+                    total += hits['bau']['total']
+                    total += hits['swa']['total']
+                    for tag in error_tags:
+                        item['error_tags'].add(tag)
 
-                # e-codices
-                hits, doi, error_tags = e_codices.enrich(sys_number)
-                document['hits']['e-codices'] = hits
-                total += hits['total']
-                error_tags_list.extend(error_tags)
+                    # e-codices
+                    hits, doi, error_tags = e_codices.enrich(sys_number)
+                    item['hits']['e-codices'] = hits
+                    total += hits['total']
+                    for tag in error_tags:
+                        item['error_tags'].add(tag)
 
-                if doi is not None:
-                    instance.script_update("ctx._source.identifiers.doi = '{}'".format(doi),
-                                           params={},
-                                           doc_id=identifier)
+                    if doi is not None:
+                        if 'doi' in item['identifiers']:
+                            if isinstance(item['identifiers']['doi'], list):
+                                item['identifiers']['doi'].append(doi)
+                            else:
+                                item['identifiers']['doi'] = [item['identifiers']['doi'], doi]
 
                 # e-mails dsv05
                 # TODO
 
-                document['hits']['total'] = total
+                item['error_tags'] = list(item['error_tags'])
 
-                instance.update(document, doc_id=identifier)
-                for tag in error_tags_list:
-                    instance.script_update('ctx._source.error_tags.add(params.tag)', {'tag': tag}, doc_id=identifier)
+                item['hits']['total'] = total
+
+                instance.index_into(item, item['identifier'])
