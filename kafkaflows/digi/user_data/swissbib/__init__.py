@@ -2,7 +2,7 @@ from simple_elastic import ElasticIndex
 from typing import Dict, Tuple, Union, List
 
 
-swissbib_host = 'http://sb-uesl1.swissbib.unibas.ch:8080'
+swissbib_host = 'localhost:8080'
 
 
 def enrich(system_number: str) -> Tuple[Dict[str, Dict[str, int]], Union[List[str], None]]:
