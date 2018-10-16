@@ -1,11 +1,8 @@
 from simple_elastic import ElasticIndex
 from typing import Dict, Tuple, Union, List
 
-opac_host = 'http://localhost:9200'
 
-
-def enrich(system_number: str) -> Tuple[Dict[str, int], Union[List[str], None]]:
-    index = ElasticIndex('opac-access', 'log', url=opac_host)
+def enrich(index: ElasticIndex, system_number: str) -> Tuple[Dict[str, int], Union[List[str], None]]:
 
     query = {
             'query': {

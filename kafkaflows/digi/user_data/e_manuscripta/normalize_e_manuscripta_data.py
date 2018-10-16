@@ -115,8 +115,10 @@ if __name__ == '__main__':
     for sys_number in result:
         if 'emanus-bau' in result[sys_number]:
             name = 'emanus-bau'
+            other = 'swa'
         else:
             name = 'emanus-swa'
+            other = 'bau'
         item = dict()
         item[name.split('-')[1]] = dict()
         total = 0
@@ -125,6 +127,10 @@ if __name__ == '__main__':
             total += item[name.split('-')[1]][y]
         item[name.split('-')[1]]['total'] = total
         item['identifier'] = sys_number
+
+        item[other] = dict()
+        for s in ['2016', '2017', '2018', 'total']:
+            item[other][s] = 0
         elastic_data.append(item)
 
     index = ElasticIndex('e-manuscripta-data', 'hits')

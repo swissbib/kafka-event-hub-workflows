@@ -1,12 +1,8 @@
 from simple_elastic import ElasticIndex
 from typing import Dict, Tuple, Union, List
 
-e_data_host = 'http://localhost:9200'
 
-
-def enrich(system_number: str) -> Tuple[Dict[str, Dict[str, int]], Union[List[str], None]]:
-    index = ElasticIndex('e-rara-data', 'hits', url=e_data_host)
-
+def enrich(index: ElasticIndex, system_number: str) -> Tuple[Dict[str, Dict[str, int]], Union[List[str], None]]:
     query = {
             '_source': ['bau.*'],
             'query': {

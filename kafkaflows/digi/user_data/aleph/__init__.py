@@ -1,14 +1,14 @@
 from simple_elastic import ElasticIndex
 from typing import Dict, Tuple, Union, List
 
+placeholder = {
+    'reservations': {'2016': 0, '2017': 0, '2018': 0, 'total': 0},
+    'loans': {'2016': 0, '2017': 0, '2018': 0, 'total': 0}
+}
 
-def enrich(system_number: str, database: str) -> Tuple[Dict[str, Dict[str, int]], Union[List[str], None]]:
-    placeholder = {
-        'reservations': {'2016': 0, '2017': 0, '2018': 0, 'total': 0},
-        'loans': {'2016': 0, '2017': 0, '2018': 0, 'total': 0}
-    }
+
+def enrich(index: ElasticIndex, system_number: str, database: str) -> Tuple[Dict[str, Dict[str, int]], Union[List[str], None]]:
     if database == 'dsv01':
-        index = ElasticIndex('aleph-dsv01-data', 'hits', url='http://localhost:9200')
         query = {
             '_source': ['reservations.*', 'loans.*'],
             'query': {
