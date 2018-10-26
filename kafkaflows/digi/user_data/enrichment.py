@@ -40,20 +40,21 @@ def enrich_user_data(config):
                     item['error_tags'].add(tag)
 
                 # opac
+                # cannot be attributed to a specific database
                 hits, error_tags = opac.enrich(opac_index, sys_number)
                 item['hits']['opac-access'] = hits
                 total += hits['total']
                 for tag in error_tags:
                     item['error_tags'].add(tag)
 
-                # aleph
-                hits, error_tags = aleph.enrich(aleph_index, sys_number, database)
-                item['hits']['aleph'] = hits
-                total += hits['loans']['total']
-                for tag in error_tags:
-                    item['error_tags'].add(tag)
+                if database == 'dsv01':
+                    # aleph
+                    hits, error_tags = aleph.enrich(aleph_index, sys_number, database)
+                    item['hits']['aleph'] = hits
+                    total += hits['loans']['total']
+                    for tag in error_tags:
+                        item['error_tags'].add(tag)
 
-                if database == 'dsv05':
                     # e-rara
                     hits, error_tags = e_rara.enrich(e_rara_index, sys_number)
                     item['hits']['e-rara'] = hits
@@ -61,6 +62,7 @@ def enrich_user_data(config):
                     for tag in error_tags:
                         item['error_tags'].add(tag)
 
+                if database == 'dsv05':
                     # e-manuscripta
                     hits, error_tags = e_manuscripta.enrich(e_manuscripta_index, sys_number)
                     item['hits']['e-manuscripta'] = hits
@@ -82,12 +84,12 @@ def enrich_user_data(config):
                                 item['identifiers']['doi'].append(doi)
                             else:
                                 item['identifiers']['doi'] = [item['identifiers']['doi'], doi]
+                        else:
+                            item['identifiers']['doi'] = [doi]
 
                 # e-mails dsv05
                 # TODO
 
                 item['error_tags'] = list(item['error_tags'])
-
                 item['hits']['total'] = total
-
                 instance.index_into(item, item['identifier'])
