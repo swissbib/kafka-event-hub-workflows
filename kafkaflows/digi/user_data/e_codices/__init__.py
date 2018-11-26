@@ -1,5 +1,6 @@
 from simple_elastic import ElasticIndex
 from typing import Dict, Tuple, List, Optional
+import logging
 
 
 def enrich(index: ElasticIndex, system_number: str) -> Tuple[Dict[str, int], Optional[str], Optional[List[str]]]:
@@ -16,6 +17,7 @@ def enrich(index: ElasticIndex, system_number: str) -> Tuple[Dict[str, int], Opt
         }
     results = index.scan_index(query=query)
     if len(results) == 1:
+        logging.debug(results)
         if 'doi' in results[0]:
             doi = results[0]['doi']
         else:
