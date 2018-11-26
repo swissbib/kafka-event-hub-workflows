@@ -1,4 +1,3 @@
-from collections import OrderedDict
 import json
 import requests
 import time
@@ -6,7 +5,6 @@ import time
 
 def create_full_mapping(path: str, collection: str, start: int): 
   with open(path, 'r') as fp:
-    sys_numbers = OrderedDict()
     vlids_dict = dict()
     vlids = list()
 
