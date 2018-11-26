@@ -11,5 +11,5 @@ if __name__ == '__main__':
         print(len(export))
     print(len(export))
 
-    with open('elias-data--20181022.json', 'w') as fp:
+    with open('elias-data-e-codices-20181022.json', 'w') as fp:
         json.dump(export, fp)
