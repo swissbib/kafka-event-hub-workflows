@@ -7,6 +7,6 @@ indexes:
       doc_type: record
       url: http://localhost:9200
   - index:
-     index: kafka-dsv01-v7
-     doc_type: record
-     url: http://localhost:9200
+      index: kafka-dsv01-v7
+      doc_type: record
+      url: http://localhost:9200
