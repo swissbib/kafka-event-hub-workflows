@@ -19,6 +19,9 @@ Können wir darüber mal reden?
 * Einen kurzen Moment habe ich bei dem Gedanken workflow an mögliche Tools für dieses Thema gedacht. was mir dabei in 
 den Sinn kommt sind Stichworte wie Luigi oder Nifi. Dann habe ich den Gedanken aber schon fast wieder verworfen
 weil ich nicht jede Sache mit einem "Tool erschlagen" möchte. Was kommt Euch dazu in den Sinn?
+* wo stehen wir mit der Evaluation von streaming Prozessen (Transformationen) aktuell auf Basis Kafka? Können wir bereits absehen,
+ob die von Jonas mit Python abgebildeten Prozesse übertragen werden können?
+Können wir versuchen, hier einen einigermassen realistischen Plan aufzustellen?
 
 2 wie werde ich weiter vorgehen
 
